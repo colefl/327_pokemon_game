@@ -270,11 +270,13 @@ Connects the east and west paths
 int connectE_W(int ex, int ey, int wx, int wy, struct Map *m){
 	int rand_num;
 	int count = 0;
+	int pSpawn;
+	bool pSpawned = false;
 	bool spawned = false;
 
 	while(wx != ex || wy != ey){
 		rand_num = rand();
-
+		pSpawn = rand_num % 400 + 1;
 		if(rand_num % 2 == 0 && wx != ex){
 			if(wx + 1 < WORLDX && m->arr[wx + 1][wy] != '%' && m->arr[wx + 1][wy] != 'C' && m->arr[wx + 1][wy] != 'M'){ //Checking to the right
 				wx++;
@@ -306,6 +308,11 @@ int connectE_W(int ex, int ey, int wx, int wy, struct Map *m){
 
 		if(count > 5 && !spawned){
 			spawned = checkForCenter(wx, wy, m);
+		}
+		if(count >= pSpawn && !pSpawned){
+			m->arr[wx][wy] = '@'; //Need to swap for enemy init
+			pSpawned = true;
+			rand_num = rand();
 		}
 	}
 	return 0;
