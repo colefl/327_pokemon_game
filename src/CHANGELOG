@@ -1,0 +1,87 @@
+DATE: 01/30/2026, 12:08PM
+I just had the idea for taking modulo of the random seeded number in order to get the points for my spread.
+
+I'm going to attempt the more natural looking generation.
+
+DATE: 01/30/2026, 1:01PM
+I have populated the map with random points, I'm going to try to spread the points out again
+
+DATE: 02/01/2026, 7:04PM
+I'm still only using ints for the representation of the map however, I've completed the border initialization as well as updated the range on my random numbers to not accidentally overlap an edge
+
+DATE: 02/01/2026, 7:29PM
+I managed to get the paths started. They are only the points on the edges however, I plan to get further into the meat and potatoes of the coordinates now.
+
+DATE: 02/02/2026, 9:45PM
+I've been editting a lot of the logic after realizing from this reddit thread here: https://www.reddit.com/r/gamedev/comments/3eg3oh/reading_through_an_array_2d_from_center_to_corners/
+That what I've been looking for in terms of making my program spread is DFS. I've just been reading tons of geeksforgeeks articles about how to implement dfs in c and making my own queue struct.
+
+DATE: 02/03/2026, 12:15AM
+I left tonight with things compiling however I'm unsure of how to initialize my queue. I stole the queue from an online source here
+https://www.digitalocean.com/community/tutorials/queue-in-c
+
+DATE: 02/03/2026, 3:25PM
+I finally got the DFS to work, I switched my logic up to now just check to see if the front of the queue is null instead of checking the size of the queue
+because intuitively the queue will only be empty if the front is null. In addition to this, I switched around my canGrow check from initializing the visitied to not
+because if it did it would skip over that check in the canGrow method, did the same for the getNum method.
+
+DATE: 02/03/2026, 4:15PM
+I figured the pathing pretty easily, nothing too special or crazy. I decided to implement a rand_num check to give a bit more variance in the pathing
+however, it would appear that this did not work. That might be for the best though because I still need to add the pokemart and pokecenter. Anywho,
+it's time to copy and paste the same logic into north and south and hope nothing explodes. This m1 apple chip is begging for a break.
+
+DATE: 02/03/2026, 6:01PM
+I figured out how to get the center to display however, I'm realizing now that I have to add many many more checks on the paths to make sure they don't overlap with the center.
+
+DATE: 02/04/2026, 2:46PM
+I didn't realize I had to add a water area too so I added that as well as that I bug fixed the spawning of the structures in the program by turning the check for it
+into a boolean that tells whether or not it spawned.
+ -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 
+ 
+ASSIGNMENT 1.02
+
+DATE: 02/04/2026, 1:13pm
+Figured the scanf function and migrated into having a main function instead of calling from world gen
+
+DATE: 02/05/2026, 5:44pm
+Configured new file for the maps storage and allocation called Maps.c. Also configured my maps too be pointers and such.
+
+DATE: 02/09/2026, 12:38pm
+I had to reconfigure the visited boolean array to be a part of the map struct as well as created a cleanup function to deallocate space in memory
+
+DATE: 02/09/2026, 7:58pm
+Made further attempts at connect the paths. Also fixed initial pathing problems by a lot of trial and error. Current attempt is to check surrounding maps
+for whether they're null and set the entrances on the current map respectively. Then I added a check inside the generation of paths on the edges
+in order to make sure that the paths weren't already allocated on the created map. Didn't work YET though but I have some ideas.
+
+DATE: 02/10/2026, 8:00am
+I realized my folley was once again putting the directions in the wrong initialization. oopsies! Anyways, it works now, moving onto using the fly function, then I
+have some ideas for what I can do about the edges of the maps.
+
+DATE: 02/10/2026, 3:05pm
+I have experimented a bit more with the fly function and now have a working fly function. Now will be moving onto checking edges. Already have one in place for the 
+fly function but now I need to make one for the removal of the edges.
+
+DATE: 02/10/2026, 4:50pm
+I've worked much further into the error checking for the edges and such. I'm using a specific integer to populate the entrances to check if the path is on the edge or not.
+Currently broken because the path generator is trying to find the path still when the edge doesn't have anything.
+
+DATE: 02/10/2026, 8:04pm
+Got the north edge to work, need to fill out the rest of the map edges now.
+
+DATE: 02/20/2026, 10:35pm
+Got the edges all working but my code is extremely redundant. I'm not sure of any other ways to do this though and it's too close to deadline to do that big of a refactor... Will start working on the corners now
+
+DATE: 02/11/2026, 9:02am
+Back to working on the corners. I realized a bug in where my indexing was on my check entrances that was making the 200th maps on the east sides be out of bounds.
+
+Date: 02/11/2026, 3:03pm
+Finally got the northern corner to populate and work, still using tons of excess code it appears and I feel like I have so many redundant checks for the Mart, Center, and such. I will have to 
+omit the reduced spawning of centers for now but I have an idea and will implement later
+
+Date: 02/11/2026, 4:25pm
+Finished up the logic for all four corners of the map and now all are working. I found a bug whilst testing bad inputs whereas every single character is read out of the scanf. I found
+a stack overflow article detailing how to omit the rest of the line however, for words like sweet and wesn, the scanf will not pick up on the fact that these are strings and not a bunch of single
+characters. I'm sure I could bug fix this but I am not in the mood.
+
