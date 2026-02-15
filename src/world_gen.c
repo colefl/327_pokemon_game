@@ -11,6 +11,7 @@
 #include <time.h>
 //#include "stack.c"
 #include "point_queue.c"
+#include "entities/Entity.c"
 //#include "Maps.c"
 
 enum Entrances {
@@ -101,12 +102,16 @@ int get_num(int count, struct Map *m);
 void DFS(struct point_queue *pq, struct Map *m);
 bool canGrow(struct queue_item p, struct Map *m);
 
+//SPAWNING ENTITIES
+int spawnEntities(entity entities[5], int id, struct Map *m);
+
 //Helper
 int print_board(struct Map *m);
 
 //Variables
 int rand_num;
 int count;
+entity hikers[5];
 //int x, y;
 //struct Map m;
 //int north_p, south_p, east_p, west_p;
@@ -122,7 +127,7 @@ int init_map(struct Map *m){
         }
     }
 
-	//srand(time(NULL));
+	srand(time(NULL));
 
 	rand_num = rand();
 
@@ -199,6 +204,8 @@ int init_map(struct Map *m){
 	//south is at (m.entrances[2], WORLDY-1)
 //	connectN_S(m->entrances[North], 0, m->entrances[South], WORLDY - 1, m);
 
+	spawnEntities(hikers, HIKER,  m);
+
 	return 0;
 }
 
@@ -270,11 +277,13 @@ Connects the east and west paths
 int connectE_W(int ex, int ey, int wx, int wy, struct Map *m){
 	int rand_num;
 	int count = 0;
+	int pSpawn;
+	bool pSpawned = false;
 	bool spawned = false;
 
 	while(wx != ex || wy != ey){
 		rand_num = rand();
-
+		pSpawn = rand_num % 400 + 1;
 		if(rand_num % 2 == 0 && wx != ex){
 			if(wx + 1 < WORLDX && m->arr[wx + 1][wy] != '%' && m->arr[wx + 1][wy] != 'C' && m->arr[wx + 1][wy] != 'M'){ //Checking to the right
 				wx++;
@@ -306,6 +315,13 @@ int connectE_W(int ex, int ey, int wx, int wy, struct Map *m){
 
 		if(count > 5 && !spawned){
 			spawned = checkForCenter(wx, wy, m);
+		}
+		if(count >= pSpawn && !pSpawned){
+			entity tmp;
+			tmp = CreateEntity(PLAYER, wx, wy);
+			m->arr[wx][wy] =  tmp.type; //Need to swap for enemy init
+			pSpawned = true;
+			rand_num = rand();
 		}
 	}
 	return 0;
@@ -696,27 +712,13 @@ void DFS(struct point_queue *pq, struct Map *m){
 }
 
 int get_num(int count, struct Map *m){
-	//while(count < 4){
-		//If I had to guess, I would need to model the growth much like the initial iteration of knight's tour?
-		//Recusively grow each piece out in a plus sign fashion
-		//Also, I believe I understand the point of using a queue since it will allow for a maximum number of spaces in
-		//point_x[count] = (rand_num % 78) + 1;
-		//point_y[count] = (rand_num % 19) + 1; //To account for the ranges
 
-
-		//world[point_x[count]][point_y[count]] = 2;
-
-		//printf("Random x: %d | Random y: %d\n", point_x[count], point_y[count]);
-		//rand_num = rand();
-		//count++;
-	//}
 	g1.x = (rand_num % 78) + 1;
 	g1.y = (rand_num % 19) + 1;
 
 	//printf("grass 1 x: %d | grass 1 y: %d\n", g1.x, g1.y);;
 
 	m->arr[g1.x][g1.y] = '.';
-	//visited[g1.x][g1.y] = true;
 
 	rand_num = rand();
 
@@ -726,7 +728,6 @@ int get_num(int count, struct Map *m){
 	//printf("grass 2 x: %d | grass 2 y: %d\n", g2.x, g2.y);;
 
 	m->arr[g2.x][g2.y] = '.';
-	//visited[g2.x][g2.y] = true;
 
 	rand_num = rand();
 
@@ -734,7 +735,6 @@ int get_num(int count, struct Map *m){
 	tg1.y = (rand_num % 19) + 1;
 
 	m->arr[tg1.x][tg1.y] = ':';
-	//visited[tg1.x][tg1.y] = true;
 
 	rand_num = rand();
 
@@ -742,7 +742,6 @@ int get_num(int count, struct Map *m){
 	tg2.y = (rand_num % 19) + 1;
 
 	m->arr[tg2.x][tg2.y] = ':';
-	//visited[tg2.x][tg2.y] =true;
 
 	rand_num = rand();
 
@@ -757,6 +756,31 @@ int get_num(int count, struct Map *m){
 	return 0;
 }
 
+//NEED TO INITIALIZE FUNCTION UP TOP
+int spawnEntities(entity entities[5], int id, struct Map *m){
+	//Spawn Hiker
+	int rand_x;
+	int rand_y;
+	int i;
+	for(i = 0; i < 5; i++){
+//		if(entities[i] == NULL){ //NEED TO ADD SOME CATCHES FOR  NULL VALUES
+//			continue;
+//		}
+		while(!entities[i].isSpawned){
+				rand_x = rand() % 79;
+				rand_y = rand() % 19;
+				if(m->arr[rand_x][rand_y] != '.'){
+					continue;
+				} else {
+					m->arr[rand_x][rand_y] = 'h';
+					entities[i] = CreateEntity(id, rand_x, rand_y);
+					entities[i].isSpawned = true;
+				}
+			}
+	}
+	return 0;
+}
+
 int print_board(struct Map *m){
 	int i,j;
 	//j is x and i is y in this case
@@ -766,11 +790,5 @@ int print_board(struct Map *m){
 		}
 		printf("\n");
 	}
-	//printf("\n");
-	//free(g1);
-	//free(g2);
-	//free(tg1);
-	//free(tg2);
-	//free(w);
 	return 0;
 }
