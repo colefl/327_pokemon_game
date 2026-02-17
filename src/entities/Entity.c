@@ -34,6 +34,8 @@ int copyArrs(int arr1[9], int arr2[9]);
 int printArr(int arr[9]);
 
 entity CreateEntity(int id, int x, int y){
+
+	//Weights go Bldr, Tree, Path, Pmart, Pcenter, TGras, SGras, Water, Gate
 	int player_weights[9] = {INT_MAX, INT_MAX, 10, 10, 20, 10, 10, INT_MAX, 10};
 	int hiker_weights[9] = {INT_MAX, INT_MAX, 10, 50, 50, 15, 10, INT_MAX, INT_MAX};
 	entity *tmp;
@@ -55,7 +57,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->id = HIKER;
 		tmp->type='h';
 		copyArrs(tmp->weights, hiker_weights);
-		printArr(tmp->weights);
+		//printArr(tmp->weights);
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = true;
@@ -80,5 +82,22 @@ int printArr(int arr[9]){
 	}
 	printf("done \n");
 
+	return 0;
+}
+
+
+int dijkstrasAlgo(struct Map m, entity from, entity to){
+	int included[79][21];
+	included[from.x][from.y] = 1;
+	int cost[79][21];
+	int i;
+	int j;
+	for(i = 0; i < 3; i++){
+		for(j = 0; j < 3; j++){
+			if(included[i][j] == 0){
+
+			}
+		}
+	}
 	return 0;
 }

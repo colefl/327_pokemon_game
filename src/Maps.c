@@ -47,7 +47,7 @@ int initialize_maps(struct Maps *maps, int x, int y){
 
 	init_map(tmp);
 	maps->m[x][y] = tmp;
-	print_board(maps->m[x][y]);
+	//print_board(maps->m[x][y]);
 	print_board(maps->m[x][y]);
 	printf("Currently at: %d, %d\n", x - 200, y - 200);
 	//printf("I think this is the west entrance: %d \n", tmp->entrances[0]); //debugging
