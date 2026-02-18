@@ -62,8 +62,9 @@ entity CreateEntity(int id, int x, int y){
 		tmp->y = y;
 		tmp->isSpawned = true;
 	}
-
-	return *tmp;
+	entity result = *tmp;
+	free(tmp);
+	return result;
 }
 
 int copyArrs(int arr1[9], int arr2[9]){
@@ -86,18 +87,18 @@ int printArr(int arr[9]){
 }
 
 
-int dijkstrasAlgo(struct Map m, entity from, entity to){
-	int included[79][21];
-	included[from.x][from.y] = 1;
-	int cost[79][21];
-	int i;
-	int j;
-	for(i = 0; i < 3; i++){
-		for(j = 0; j < 3; j++){
-			if(included[i][j] == 0){
-
-			}
-		}
-	}
-	return 0;
-}
+//int dijkstrasAlgo(struct Map m, entity from, entity to){
+//	int included[79][21];
+//	included[from.x][from.y] = 1;
+//	int cost[79][21];
+//	int i;
+//	int j;
+//	for(i = 0; i < 3; i++){
+//		for(j = 0; j < 3; j++){
+//			if(included[i][j] == 0){
+//
+//			}
+//		}
+//	}
+//	return 0;
+//}

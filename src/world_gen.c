@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
+#include "heap.h"
 //#include "stack.c"
 #include "point_queue.c"
 #include "entities/Entity.c"
@@ -69,6 +70,12 @@ struct point{
 	//struct point *next;
 } g1, g2, tg1, tg2, w; //Got from Brian W Kernighan and Dennis M. Ritchie's book
 
+typedef struct {
+    int x;
+    int y;
+    int cost;
+} map_cell_t;
+
 //Variables
 #define WORLDX 80
 #define WORLDY 21
@@ -104,14 +111,20 @@ bool canGrow(struct queue_item p, struct Map *m);
 
 //SPAWNING ENTITIES
 int spawnEntities(entity entities[5], int id, struct Map *m);
+int32_t cell_compare(const void *key, const void *with);
+int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]);
+static int getTerrainCost(char tile, entity *npc);
 
 //Helper
 int print_board(struct Map *m);
+int print_costs(int arr[80][21], entity *player);
 
 //Variables
 int rand_num;
 int count;
 entity hikers[5];
+entity player;
+int hiker_dist[80][21];
 //int x, y;
 //struct Map m;
 //int north_p, south_p, east_p, west_p;
@@ -205,6 +218,10 @@ int init_map(struct Map *m){
 //	connectN_S(m->entrances[North], 0, m->entrances[South], WORLDY - 1, m);
 
 	spawnEntities(hikers, HIKER,  m);
+
+	dijkstrasAlgo(m, &player, &hikers[0], hiker_dist);
+
+	print_costs(hiker_dist, &player);
 
 	return 0;
 }
@@ -317,9 +334,8 @@ int connectE_W(int ex, int ey, int wx, int wy, struct Map *m){
 			spawned = checkForCenter(wx, wy, m);
 		}
 		if(count >= pSpawn && !pSpawned){
-			entity tmp;
-			tmp = CreateEntity(PLAYER, wx, wy);
-			m->arr[wx][wy] =  tmp.type; //Need to swap for enemy init
+			player = CreateEntity(PLAYER, wx, wy);
+			m->arr[wx][wy] =  player.type; //Need to swap for enemy init
 			pSpawned = true;
 			rand_num = rand();
 		}
@@ -781,6 +797,113 @@ int spawnEntities(entity entities[5], int id, struct Map *m){
 	return 0;
 }
 
+int32_t cell_compare(const void *key, const void *with) {
+    return ((map_cell_t *)key)->cost - ((map_cell_t *)with)->cost;
+}
+
+int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]){
+    heap_t h;
+    heap_node_t *nodes[80][21];
+    map_cell_t  *cells[80][21];
+
+    int x, y;
+    for (x = 0; x < 80; x++) {
+        for (y = 0; y < 21; y++) {
+            dist[x][y] = INT_MAX;
+            nodes[x][y] = NULL;
+            cells[x][y] = NULL;
+        }
+    }
+
+    heap_init(&h, cell_compare, free);
+
+    map_cell_t *start = malloc(sizeof(map_cell_t)); //Evil segmentation arror...
+    start->x = player->x;
+    start->y = player->y;
+    start->cost = 0;
+    dist[player->x][player->y] = 0;
+    cells[player->x][player->y] = start;
+    nodes[player->x][player->y] = heap_insert(&h, start); //Inserting the initial heap node
+
+    //Same thing as what I used for knights tour
+    int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+    int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+
+    while (h.size > 0) {
+        map_cell_t *cur = heap_remove_min(&h);
+        int cx = cur->x, cy = cur->y;
+
+        //Getting all of the surrounding nodes inside
+        for (int d = 0; d < 8; d++) {
+            int nx = cx + dx[d];
+            int ny = cy + dy[d];
+
+            if (nx < 0 || nx >= 80 || ny < 0 || ny >= 21) { //Bounds checking
+            	continue;
+            }
+
+            int weight = getTerrainCost(m->arr[nx][ny], npc);//Outsourced to a static method like we learned in class today
+            if (weight == INT_MAX) continue;
+
+            int new_cost = dist[cx][cy] + weight;//[x][y]
+
+            if (new_cost < dist[nx][ny]) {
+                dist[nx][ny] = new_cost;
+
+                if (nodes[nx][ny] == NULL) {
+                    map_cell_t *cell = malloc(sizeof(map_cell_t)); //Evil segmentation error part 2 except I got it this time
+                    cell->x = nx;
+                    cell->y = ny;
+                    cell->cost = new_cost;
+                    cells[nx][ny] = cell;
+                    nodes[nx][ny] = heap_insert(&h, cell);
+                } else {
+                    cells[nx][ny]->cost = new_cost;
+                    heap_decrease_key_no_replace(&h, nodes[nx][ny]); //Replace the lowest number out of the 8
+                }
+            }
+        }
+    }
+
+    heap_delete(&h); //Delete heap at the end
+    return 0;
+}
+//Weights go Bldr, Tree, Path, Pmart, Pcenter, TGras, SGras, Water, Gate
+/*
+ * Key:
+ * Bldr = 0
+ * Tree = 1
+ * Path = 2
+ * PMart = 3
+ * Pcenter = 4
+ * TGras = 5
+ * SGras = 6
+ * Water = 7
+ * Gate = 8;
+ */
+static int getTerrainCost(char tile, entity *npc){
+	switch(tile){
+	case '%':
+		return npc->weights[0];
+	case '^': //I know I haven't made the trees yet I want to but I need more time
+		return npc->weights[1];
+	case '#':
+		return npc->weights[2];
+	case 'M':
+		return npc->weights[3];
+	case 'C':
+		return npc->weights[4];
+	case ':':
+		return npc->weights[5];
+	case '.':
+		return npc->weights[6];
+	case '~':
+		return npc->weights[7];
+		//No distinction for gates yet... Hopefully will not come back to bite me.
+	}
+	return 0;
+}
+
 int print_board(struct Map *m){
 	int i,j;
 	//j is x and i is y in this case
@@ -791,4 +914,23 @@ int print_board(struct Map *m){
 		printf("\n");
 	}
 	return 0;
+}
+
+int print_costs(int arr[80][21], entity *player){
+    int x, y;
+    for(y = 0; y < 21; y++){
+        for(x = 0; x < 80; x++){
+            if(x == player->x && y == player->y){
+                printf(" @");
+                continue;
+            }
+            if(arr[x][y] == INT_MAX){
+                printf("  ");
+                continue;
+            }
+            printf("%2d", arr[x][y] % 100);
+        }
+        printf("\n");
+    }
+    return 0;
 }
