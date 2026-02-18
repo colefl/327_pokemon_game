@@ -38,6 +38,7 @@ entity CreateEntity(int id, int x, int y){
 	//Weights go Bldr, Tree, Path, Pmart, Pcenter, TGras, SGras, Water, Gate
 	int player_weights[9] = {INT_MAX, INT_MAX, 10, 10, 20, 10, 10, INT_MAX, 10};
 	int hiker_weights[9] = {INT_MAX, INT_MAX, 10, 50, 50, 15, 10, INT_MAX, INT_MAX};
+	int rival_weights[9] = {INT_MAX, INT_MAX, 10, 50, 50, 20, 10, INT_MAX, INT_MAX};
 	entity *tmp;
 	if(!(tmp = malloc(sizeof (*tmp)))){ //MAKE SURE WE FREE THIS DATA TYPE
 		return *tmp;
@@ -61,6 +62,16 @@ entity CreateEntity(int id, int x, int y){
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = true;
+		break;
+
+	case RIVAL:
+		tmp->id = RIVAL;
+		tmp->type='R';
+		copyArrs(tmp->weights, rival_weights);
+		tmp->x= x;
+		tmp->y = y;
+		tmp->isSpawned = true;
+		break;
 	}
 	entity result = *tmp;
 	free(tmp);

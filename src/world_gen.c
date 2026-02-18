@@ -845,6 +845,25 @@ int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]){
             int weight = getTerrainCost(m->arr[nx][ny], npc);//Outsourced to a static method like we learned in class today
             if (weight == INT_MAX) continue;
 
+            if((nx == 79 && m->arr[nx][ny] == '#')){ //This is just overwriting the gates with INT_MAX because I didn't set up that infrastructure in the code.
+            	weight = INT_MAX;
+            	dist[nx][ny] = weight;
+            	printf("I'm overriding the pos");
+            	continue;
+            } else if((ny == 0 && m->arr[nx][ny] == '#')){
+            	weight = INT_MAX;
+            	dist[nx][ny] = weight;
+            	continue;
+            } else if((nx == 0 && m->arr[nx][ny] == '#')){
+            	weight = INT_MAX;
+            	dist[nx][ny] = weight;
+            	continue;
+            } else if (ny == 20 && m->arr[nx][ny] == '#'){
+            	weight = INT_MAX;
+            	dist[nx][ny] = weight;
+            	continue;
+            }
+
             int new_cost = dist[cx][cy] + weight;//[x][y]
 
             if (new_cost < dist[nx][ny]) {
