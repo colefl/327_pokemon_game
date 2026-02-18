@@ -108,6 +108,7 @@ bool checkForMart(int nx, int ny, struct Map *m);
 int get_num(int count, struct Map *m);
 void DFS(struct point_queue *pq, struct Map *m);
 bool canGrow(struct queue_item p, struct Map *m);
+int pepperInTrees(struct Map *m);
 
 //SPAWNING ENTITIES
 int spawnEntities(entity entities[5], int id, struct Map *m);
@@ -122,9 +123,11 @@ int print_costs(int arr[80][21], entity *player);
 //Variables
 int rand_num;
 int count;
-entity hikers[5];
+entity hikers[5]; //I think I can just do a big array of different entities??
+entity rivals[5];
 entity player;
 int hiker_dist[80][21];
+int rival_dist[80][21];
 //int x, y;
 //struct Map m;
 //int north_p, south_p, east_p, west_p;
@@ -158,12 +161,11 @@ int init_map(struct Map *m){
 
 	DFS(&pq, m);
 
+	pepperInTrees(m);
+
 	init_world_edge(m);
 
-	//west is at (0, m.entrances[1])
-	//east is at (WORLDX-1, m.entrances[3])
-
-	//Okay this might be the beginning of the end for me lol
+	//printf("hello I make it here\n");
 	/*
 	 * Edge possibilities
 	 * North edge = connect east and west, have south connect upwards until it hits '#'
@@ -218,10 +220,15 @@ int init_map(struct Map *m){
 //	connectN_S(m->entrances[North], 0, m->entrances[South], WORLDY - 1, m);
 
 	spawnEntities(hikers, HIKER,  m);
+	spawnEntities(rivals, RIVAL, m);
+
+	//printf("hello I make it here to spawnEntities");
 
 	dijkstrasAlgo(m, &player, &hikers[0], hiker_dist);
+	dijkstrasAlgo(m, &player, &rivals[0], rival_dist);
 
 	print_costs(hiker_dist, &player);
+	print_costs(rival_dist, &player);
 
 	return 0;
 }
@@ -269,7 +276,7 @@ int init_world_edge(struct Map *current_map){
 		current_map->arr[current_map->entrances[South]][WORLDY - 1] = '#'; //south
 	}
 
-	printf("north path: %d || south path: %d\n", current_map->entrances[North], current_map->entrances[South]);
+	//printf("north path: %d || south path: %d\n", current_map->entrances[North], current_map->entrances[South]);
 
 	//left and right edge
 	for(j = 0; j < WORLDY; j++){
@@ -283,7 +290,7 @@ int init_world_edge(struct Map *current_map){
 		current_map->arr[WORLDX - 1][current_map->entrances[East]] = '#'; //east
 	}
 
-	printf("west path: %d || east path: %d\n", current_map->entrances[West], current_map->entrances[East]);
+	//printf("west path: %d || east path: %d\n", current_map->entrances[West], current_map->entrances[East]);
 
 	return 0;
 }
@@ -298,6 +305,7 @@ int connectE_W(int ex, int ey, int wx, int wy, struct Map *m){
 	bool pSpawned = false;
 	bool spawned = false;
 
+	//printf("hello I make it here to connect E_W\n");
 	while(wx != ex || wy != ey){
 		rand_num = rand();
 		pSpawn = rand_num % 400 + 1;
@@ -335,7 +343,7 @@ int connectE_W(int ex, int ey, int wx, int wy, struct Map *m){
 		}
 		if(count >= pSpawn && !pSpawned){
 			player = CreateEntity(PLAYER, wx, wy);
-			m->arr[wx][wy] =  player.type; //Need to swap for enemy init
+			m->arr[wx][wy] =  player.marker;
 			pSpawned = true;
 			rand_num = rand();
 		}
@@ -351,6 +359,7 @@ int connectN_S(int nx, int ny, int sx, int sy, struct Map *m){
 	int count = 0;
 	int rand_num;
 
+	//printf("hello I make it to connectN_S\n");
 	while(nx != sx || ny != sy){
 		rand_num = rand();
 		if(rand_num % 2 == 0 && ny != sy){
@@ -727,6 +736,20 @@ void DFS(struct point_queue *pq, struct Map *m){
 	}
 }
 
+int pepperInTrees(struct Map *m){
+	int count = 0;
+	int rand_x, rand_y;
+	while(count < 30){
+		rand_x = rand() %79 + 1;
+		rand_y = rand() % 19 + 1;
+		if(m->arr[rand_x][rand_y] == '.' || m->arr[rand_x][rand_y] == ':'){
+			m->arr[rand_x][rand_y] = '^';
+		}
+		count++;
+	}
+	return 0;
+}
+
 int get_num(int count, struct Map *m){
 
 	g1.x = (rand_num % 78) + 1;
@@ -772,26 +795,35 @@ int get_num(int count, struct Map *m){
 	return 0;
 }
 
-//NEED TO INITIALIZE FUNCTION UP TOP
+//This is a dynamic spawning of entities on the world
 int spawnEntities(entity entities[5], int id, struct Map *m){
-	//Spawn Hiker
+	//Spawn stuff and things
 	int rand_x;
 	int rand_y;
 	int i;
+	//int attempts = 0;
 	for(i = 0; i < 5; i++){
-//		if(entities[i] == NULL){ //NEED TO ADD SOME CATCHES FOR  NULL VALUES
-//			continue;
-//		}
+		//if(entities[i] == NULL){ //NEED TO ADD SOME CATCHES FOR  NULL VALUES
+		//	continue;
+		//}
+		entities[i] = CreateEntity(id, rand_x, rand_y);
+		//printf("hello I am spawning: %c\n", entities[0].marker);
 		while(!entities[i].isSpawned){
 				rand_x = rand() % 79;
 				rand_y = rand() % 19;
-				if(m->arr[rand_x][rand_y] != '.'){
-					continue;
-				} else {
-					m->arr[rand_x][rand_y] = 'h';
-					entities[i] = CreateEntity(id, rand_x, rand_y);
+				if(m->arr[rand_x][rand_y] == entities[i].spawnsOn){
+					//printf("Okay I'm getting put onto something\n");
+					m->arr[rand_x][rand_y] = entities[i].marker;
 					entities[i].isSpawned = true;
+				} else {
+					//printf("there will be many prints hopefully\n");
+					//attempts++;
+				    continue;
 				}
+//				if(m->arr[entities[i].x][entities[i].y] != entities[i].marker){//this is a really stupid way to do it but oh well
+//					printf("failed to spawn entity\n");
+//					deleteEntity(&entities[i]);
+//				}
 			}
 	}
 	return 0;
@@ -826,8 +858,8 @@ int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]){
     nodes[player->x][player->y] = heap_insert(&h, start); //Inserting the initial heap node
 
     //Same thing as what I used for knights tour
-    int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-    int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+    int dx[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+    int dy[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
 
     while (h.size > 0) {
         map_cell_t *cur = heap_remove_min(&h);
@@ -848,7 +880,7 @@ int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]){
             if((nx == 79 && m->arr[nx][ny] == '#')){ //This is just overwriting the gates with INT_MAX because I didn't set up that infrastructure in the code.
             	weight = INT_MAX;
             	dist[nx][ny] = weight;
-            	printf("I'm overriding the pos");
+            	//printf("I'm overriding the pos");
             	continue;
             } else if((ny == 0 && m->arr[nx][ny] == '#')){
             	weight = INT_MAX;

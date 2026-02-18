@@ -24,8 +24,9 @@ enum CharType{
 typedef struct {
 	int x;
 	int y;
-	char type;
+	char marker;
 	int id;
+	char spawnsOn;
 	int weights[8];
 	bool isSpawned;
 } entity;
@@ -46,36 +47,44 @@ entity CreateEntity(int id, int x, int y){
 	switch (id){
 	case PLAYER:
 		tmp->id = PLAYER;
-		tmp->type='@';
+		tmp->marker='@';
+		tmp->spawnsOn='#';
 		copyArrs(tmp->weights, player_weights);
 		//printArr(tmp->weights);
 		tmp->x = x;
 		tmp->y = y;
-		tmp->isSpawned = true;
+		tmp->isSpawned = false;
 		break;
 
 	case HIKER:
 		tmp->id = HIKER;
-		tmp->type='h';
+		tmp->marker='h';
+		tmp->spawnsOn=':';
 		copyArrs(tmp->weights, hiker_weights);
 		//printArr(tmp->weights);
 		tmp->x = x;
 		tmp->y = y;
-		tmp->isSpawned = true;
+		tmp->isSpawned = false;
 		break;
 
 	case RIVAL:
 		tmp->id = RIVAL;
-		tmp->type='R';
+		tmp->marker='R';
+		tmp->spawnsOn='.';
 		copyArrs(tmp->weights, rival_weights);
 		tmp->x= x;
 		tmp->y = y;
-		tmp->isSpawned = true;
+		tmp->isSpawned = false;
 		break;
 	}
 	entity result = *tmp;
 	free(tmp);
 	return result;
+}
+
+int deleteEntity(entity *npc){
+	free(npc); //?
+	return 0;
 }
 
 int copyArrs(int arr1[9], int arr2[9]){
