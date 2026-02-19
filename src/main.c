@@ -14,6 +14,12 @@ struct Map m;
 Maps maps;
 
 /*
+ * Idea Board: So, for assignment 4, I need to add in a lot of different entity types which move in many different ways
+ * I want to make sure spawning is okay so I'm thinking I may try to learn how to implement a hashmap in order to get the
+ * contains as fast as possible.
+ */
+
+/*
  * For creating paths that connect depending on where you are in the world
  * we would need to check adjacent maps. If not null, based on where map is
  * populate the current map entrances with the other maps direction.
