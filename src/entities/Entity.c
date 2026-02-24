@@ -18,7 +18,14 @@ enum CharType{
 	PLAYER,
 	HIKER,
 	RIVAL,
-	SWIMMER
+	PACER,
+	WANDERER,
+	SENTRY,
+	EXPLORERS
+};
+
+enum entity_readbility{
+	NUM_OF_TILES = 10
 };
 
 typedef struct {
@@ -26,20 +33,20 @@ typedef struct {
 	int y;
 	char marker;
 	int id;
-	char spawnsOn;
+	char spawnsOn[4];
 	int weights[8];
 	bool isSpawned;
 } entity;
 
-int copyArrs(int arr1[9], int arr2[9]);
-int printArr(int arr[9]);
+int copyArrs(int arr1[NUM_OF_TILES], int arr2[NUM_OF_TILES]);
+int printArr(int arr[NUM_OF_TILES]);
 
 entity CreateEntity(int id, int x, int y){
 
-	//Weights go Bldr, Tree, Path, Pmart, Pcenter, TGras, SGras, Water, Gate
-	int player_weights[9] = {INT_MAX, INT_MAX, 10, 10, 20, 10, 10, INT_MAX, 10};
-	int hiker_weights[9] = {INT_MAX, INT_MAX, 10, 50, 50, 15, 10, INT_MAX, INT_MAX};
-	int rival_weights[9] = {INT_MAX, INT_MAX, 10, 50, 50, 20, 10, INT_MAX, INT_MAX};
+	//Weights go Bldr, Tree, Path, Pmart, Pcenter, TGras, SGras, Water, Gate, Other NPCS
+	int player_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, 10, 10, 20, 10, 10, INT_MAX, 10, INT_MAX};
+	int hiker_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, 10, 50, 50, 15, 10, INT_MAX, INT_MAX, INT_MAX};
+	int rival_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, 10, 50, 50, 20, 10, INT_MAX, INT_MAX, INT_MAX};
 	entity *tmp;
 	if(!(tmp = malloc(sizeof (*tmp)))){ //MAKE SURE WE FREE THIS DATA TYPE
 		return *tmp;
@@ -48,7 +55,7 @@ entity CreateEntity(int id, int x, int y){
 	case PLAYER:
 		tmp->id = PLAYER;
 		tmp->marker='@';
-		tmp->spawnsOn='#';
+		tmp->spawnsOn[0]='#';
 		copyArrs(tmp->weights, player_weights);
 		//printArr(tmp->weights);
 		tmp->x = x;
@@ -59,7 +66,7 @@ entity CreateEntity(int id, int x, int y){
 	case HIKER:
 		tmp->id = HIKER;
 		tmp->marker='h';
-		tmp->spawnsOn=':';
+		tmp->spawnsOn[0]=':';
 		copyArrs(tmp->weights, hiker_weights);
 		//printArr(tmp->weights);
 		tmp->x = x;
@@ -69,14 +76,25 @@ entity CreateEntity(int id, int x, int y){
 
 	case RIVAL:
 		tmp->id = RIVAL;
-		tmp->marker='R';
-		tmp->spawnsOn='.';
+		tmp->marker='r';
+		tmp->spawnsOn[0]='.';
 		copyArrs(tmp->weights, rival_weights);
 		tmp->x= x;
 		tmp->y = y;
 		tmp->isSpawned = false;
 		break;
+	case PACER:
+		tmp->id = PACER;
+		tmp->marker='p';
+		tmp->spawnsOn[0] = '.';
+		tmp->spawnsOn[1]=':';
+		//We don't need this to be the case
+		tmp->x = x;
+		tmp->y = y;
+		tmp->isSpawned = false;
+		break;
 	}
+
 	entity result = *tmp;
 	free(tmp);
 	return result;
@@ -87,7 +105,7 @@ int deleteEntity(entity *npc){
 	return 0;
 }
 
-int copyArrs(int arr1[9], int arr2[9]){
+int copyArrs(int arr1[NUM_OF_TILES], int arr2[NUM_OF_TILES]){
 	int i;
 	for(i = 0; i < 8; i++){
 		arr1[i] = arr2[i];
@@ -95,7 +113,7 @@ int copyArrs(int arr1[9], int arr2[9]){
 	return 0;
 }
 
-int printArr(int arr[9]){
+int printArr(int arr[NUM_OF_TILES]){
 	int i;
 	printf("Weights: ");
 	for(i = 0; i < 8; i++){
@@ -107,18 +125,4 @@ int printArr(int arr[9]){
 }
 
 
-//int dijkstrasAlgo(struct Map m, entity from, entity to){
-//	int included[79][21];
-//	included[from.x][from.y] = 1;
-//	int cost[79][21];
-//	int i;
-//	int j;
-//	for(i = 0; i < 3; i++){
-//		for(j = 0; j < 3; j++){
-//			if(included[i][j] == 0){
-//
-//			}
-//		}
-//	}
-//	return 0;
-//}
+

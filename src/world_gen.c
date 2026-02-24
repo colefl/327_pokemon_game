@@ -115,6 +115,7 @@ int spawnEntities(entity entities[5], int id, struct Map *m);
 int32_t cell_compare(const void *key, const void *with);
 int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]);
 static int getTerrainCost(char tile, entity *npc);
+int check_if_spawns_on(char tile, char spawnables[4]);
 
 //Helper
 int print_board(struct Map *m);
@@ -125,6 +126,7 @@ int rand_num;
 int count;
 entity hikers[5]; //I think I can just do a big array of different entities??
 entity rivals[5];
+entity pacers[5];
 entity player;
 int hiker_dist[80][21];
 int rival_dist[80][21];
@@ -221,14 +223,15 @@ int init_map(struct Map *m){
 
 	spawnEntities(hikers, HIKER,  m);
 	spawnEntities(rivals, RIVAL, m);
+	spawnEntities(pacers, PACER, m);
 
 	//printf("hello I make it here to spawnEntities");
 
 	dijkstrasAlgo(m, &player, &hikers[0], hiker_dist);
 	dijkstrasAlgo(m, &player, &rivals[0], rival_dist);
 
-	print_costs(hiker_dist, &player);
-	print_costs(rival_dist, &player);
+	//print_costs(hiker_dist, &player);
+	//print_costs(rival_dist, &player);
 
 	return 0;
 }
@@ -795,7 +798,11 @@ int get_num(int count, struct Map *m){
 	return 0;
 }
 
-//This is a dynamic spawning of entities on the world
+//This is a not-dynamic spawning of entities on the world
+/*
+ * I think I could improve this algorithm by making it pass in a queue of entities/d_array
+ * Currently, it requires for there to be a special magical awesome number of 5 entities for it to work.
+ */
 int spawnEntities(entity entities[5], int id, struct Map *m){
 	//Spawn stuff and things
 	int rand_x;
@@ -811,9 +818,10 @@ int spawnEntities(entity entities[5], int id, struct Map *m){
 		while(!entities[i].isSpawned){
 				rand_x = rand() % 79;
 				rand_y = rand() % 19;
-				if(m->arr[rand_x][rand_y] == entities[i].spawnsOn){
+				if(check_if_spawns_on(m->arr[rand_x][rand_y], entities->spawnsOn)){
 					//printf("Okay I'm getting put onto something\n");
 					m->arr[rand_x][rand_y] = entities[i].marker;
+					//printf("Here is what's spawning: %c\n", entities[i].marker);
 					entities[i].isSpawned = true;
 				} else {
 					//printf("there will be many prints hopefully\n");
@@ -825,6 +833,16 @@ int spawnEntities(entity entities[5], int id, struct Map *m){
 //					deleteEntity(&entities[i]);
 //				}
 			}
+	}
+	return 0;
+}
+
+int check_if_spawns_on(char tile, char spawnables[4]){
+	int i;
+	for(i = 0; i < 4; i++){
+		if(tile == spawnables[i]){
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -952,7 +970,7 @@ static int getTerrainCost(char tile, entity *npc){
 		return npc->weights[7];
 		//No distinction for gates yet... Hopefully will not come back to bite me.
 	}
-	return 0;
+	return INT_MAX;
 }
 
 int print_board(struct Map *m){

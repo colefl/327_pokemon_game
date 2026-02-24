@@ -84,4 +84,12 @@ Date: 02/11/2026, 4:25pm
 Finished up the logic for all four corners of the map and now all are working. I found a bug whilst testing bad inputs whereas every single character is read out of the scanf. I found
 a stack overflow article detailing how to omit the rest of the line however, for words like sweet and wesn, the scanf will not pick up on the fact that these are strings and not a bunch of single
 characters. I'm sure I could bug fix this but I am not in the mood.
+ -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 
+ 
+ASSIGNMENT 1.04
 
+Date: 02/24/2026, 4:44pm
+I did some light refactorings like making it so if there was no specific case for the terrain cost, default on INT_MAX(AKA handling for other npcs). I am going to attempt to make a dynamic
+array for the entities to go into that will be quite custom with a random int for it's capacity that will fill with entities before iterating through and populating the map. Currently, very work in progress.
+Also the entity struct has changed lightly to now have it's spawnsOn to be an array of characters instead of only being able to spawn on one character.
