@@ -13,6 +13,8 @@
 
 #include <limits.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 enum CharType{
 	PLAYER,
@@ -37,6 +39,7 @@ typedef struct {
 	int weights[8];
 	bool isSpawned;
 } entity;
+
 
 int copyArrs(int arr1[NUM_OF_TILES], int arr2[NUM_OF_TILES]);
 int printArr(int arr[NUM_OF_TILES]);
@@ -95,7 +98,7 @@ entity CreateEntity(int id, int x, int y){
 		break;
 	}
 
-	entity result = *tmp;
+	entity result = *tmp; //I have no idea why I did this I think it was supposed to be a temporary fix.
 	free(tmp);
 	return result;
 }

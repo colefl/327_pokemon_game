@@ -8,82 +8,67 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "Entity.c"
+#include <string.h>
+//#include "Entity.c"
+
+#define DEFAULT_ENTITY_ARR_CAPACITY 12
 
 typedef struct{
-	char *a;
-	entity npc;
+	char *a; //Idrk why we need this pointer to the data
+	int elements; //I think this is the number of elements
 	int capacity;
 } entity_arr;
 
-int eq_init(entity_arr *eq, int element_size){
-	if(!(*eq = malloc( sizeof (struct entity_arr)))){
+int eq_init(entity_arr *eq){//Don't need the element size, I know this will take in entities
+	if(!(eq = malloc( sizeof (entity_arr)))){
 		return -1;
 	}
 
+	eq->a = malloc(DEFAULT_ENTITY_ARR_CAPACITY * sizeof(entity));
+	if ((eq)->a == NULL) {
+	    free(*eq);
+	    return -1;
+	}
+
+	(eq)->capacity = DEFAULT_ENTITY_ARR_CAPACITY; //initial capacity of array
+	(eq)->elements = 0; //Num of elements
 
 	return 0;
 }
 
-/*
-struct queue_item{
-	int x; //Will hold the point's x
-	int y; //Will hold the point's y
-	char value;
-	struct queue_item *next;
-};
-
-struct point_queue{
-	struct queue_item *front;
-	struct queue_item *rear;
-	int size;
-};
-
-void initialize_pq(struct point_queue *pq){
-	pq->front = NULL;
-	pq->rear = NULL;
-	pq->size = 0;
-}
-
-int queue_size(struct point_queue *pq, int *size){
-	*size = pq->size;
+int eq_destroy(entity_arr *eq){
 	return 0;
 }
 
-int enqueue(struct point_queue* q, int x, int y, char val) {
-	struct queue_item *tmp;
-	if(!(tmp = malloc(sizeof (*tmp)))){ //Even if we change the type of tmp or the data struct this would still work
-		//malloc failed
+int eq_add(entity_arr *eq, int index, entity npc){
+	if(index >= (eq)->elements || index < 0){
 		return -1;
 	}
-    tmp->x = x;
-    tmp->y = y;
-    tmp->value=val;
-    tmp->next = NULL;
-    if (q->rear == NULL) {
-        q->front = q->rear = tmp;
-    } else {
-        q->rear->next = tmp;
-        q->rear = tmp;
-    }
-    q->size++;
 
-    return 0;
+	memcpy(((eq)->a) + ((sizeof(entity)) * (eq)->elements), npc, sizeof (entity));
+	(eq)->elements++;
+
+	return 0;
 }
 
-int dequeue(struct point_queue* q, int *x, int *y, char *val) { //Need to change this to return a queue_item instead
-    if (q->front == NULL) {
-        //printf("Queue is empty\n");
-        return -1;
-    }
-    struct queue_item* temp = q->front;
-    *x = temp->x;
-    *y = temp-> y;
-    *val = temp->value;
-    q->front = q->front->next;
-    if (q->front == NULL) q->rear = NULL;
-    free(temp);
-    q->size--;
-    return 0;
+//Need to replace a lot of the npc and such with void pointers as memcpy and memmove are not applicable for any type so they must be the only type that's applicable to any type
+int eq_remove(entity_arr *eq, int index, entity npc){
+	if(index >= (eq)->elements || index < 0){
+		return -1;
+	}
+
+	if(npc){ //I think this is kind of saying if this is real since in C 0 is false and everything else is true which is kind of really cool
+		memcpy(npc, ((eq)->a) + ((eq)->elements * (sizeof(entity))), sizeof(entity));
+	}
+
+	memmove((eq)->a + (index * (sizeof(entity)),
+			(eq)->a + ((index + 1)* (eq)->elements),
+			sizeof(entity)));
+
+	(eq)->elements--;
+
+	return 0;
 }
-*/
+
+
+

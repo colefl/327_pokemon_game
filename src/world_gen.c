@@ -13,6 +13,7 @@
 //#include "stack.c"
 #include "point_queue.c"
 #include "entities/Entity.c"
+#include "entities/entity_d_array.c"
 //#include "Maps.c"
 
 enum Entrances {
@@ -124,6 +125,7 @@ int print_costs(int arr[80][21], entity *player);
 //Variables
 int rand_num;
 int count;
+entity_arr eq;
 entity hikers[5]; //I think I can just do a big array of different entities??
 entity rivals[5];
 entity pacers[5];
@@ -155,6 +157,8 @@ int init_map(struct Map *m){
 
 	initialize_pq(&pq);
 
+	eq_init(eq);
+
 	enqueue(&pq, g1.x, g1.y, '.');
 	enqueue(&pq, g2.x, g2.y, '.');
 	enqueue(&pq, tg1.x, tg1.y, ':');
@@ -166,6 +170,10 @@ int init_map(struct Map *m){
 	pepperInTrees(m);
 
 	init_world_edge(m);
+
+	entity test;
+	test = createEntity(HIKER, 1, 1);
+	eq_add(&eq, 0, test);
 
 	//printf("hello I make it here\n");
 	/*
