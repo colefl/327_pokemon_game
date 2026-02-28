@@ -71,7 +71,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->marker='h';
 		tmp->spawnsOn[0]=':';
 		copyArrs(tmp->weights, hiker_weights);
-		//printArr(tmp->weights);
+		printArr(tmp->weights);
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = false;

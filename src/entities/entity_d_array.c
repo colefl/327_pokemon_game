@@ -26,7 +26,7 @@ int eq_init(entity_arr *eq){//Don't need the element size, I know this will take
 
 	eq->a = malloc(DEFAULT_ENTITY_ARR_CAPACITY * sizeof(entity));
 	if ((eq)->a == NULL) {
-	    free(*eq);
+	    free(eq);
 	    return -1;
 	}
 
@@ -40,7 +40,7 @@ int eq_destroy(entity_arr *eq){
 	return 0;
 }
 
-int eq_add(entity_arr *eq, int index, entity npc){
+int eq_add(entity_arr *eq, int index, entity* npc){
 	if(index >= (eq)->elements || index < 0){
 		return -1;
 	}
@@ -48,11 +48,13 @@ int eq_add(entity_arr *eq, int index, entity npc){
 	memcpy(((eq)->a) + ((sizeof(entity)) * (eq)->elements), npc, sizeof (entity));
 	(eq)->elements++;
 
+	printf("Here is an entity: %c\n", (*npc).marker);
+
 	return 0;
 }
 
 //Need to replace a lot of the npc and such with void pointers as memcpy and memmove are not applicable for any type so they must be the only type that's applicable to any type
-int eq_remove(entity_arr *eq, int index, entity npc){
+int eq_remove(entity_arr *eq, int index, void* npc){
 	if(index >= (eq)->elements || index < 0){
 		return -1;
 	}
@@ -61,9 +63,9 @@ int eq_remove(entity_arr *eq, int index, entity npc){
 		memcpy(npc, ((eq)->a) + ((eq)->elements * (sizeof(entity))), sizeof(entity));
 	}
 
-	memmove((eq)->a + (index * (sizeof(entity)),
+	memmove((eq)->a + (index * (sizeof(entity))),
 			(eq)->a + ((index + 1)* (eq)->elements),
-			sizeof(entity)));
+			sizeof(entity));
 
 	(eq)->elements--;
 

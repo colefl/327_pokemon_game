@@ -157,7 +157,7 @@ int init_map(struct Map *m){
 
 	initialize_pq(&pq);
 
-	eq_init(eq);
+	eq_init(&eq);
 
 	enqueue(&pq, g1.x, g1.y, '.');
 	enqueue(&pq, g2.x, g2.y, '.');
@@ -171,9 +171,16 @@ int init_map(struct Map *m){
 
 	init_world_edge(m);
 
-	entity test;
-	test = createEntity(HIKER, 1, 1);
+	//printf("Hello I make it here\n");
+	entity* test = NULL;
+	if(!malloc(sizeof(test))){
+		printf("this is the failure\n");
+		return -1;
+	}
+	*test = CreateEntity(HIKER, 1, 1);
+	printf("Here is an npc: %c\n", (*test).marker);
 	eq_add(&eq, 0, test);
+	free(test);
 
 	//printf("hello I make it here\n");
 	/*
