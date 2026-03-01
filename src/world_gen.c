@@ -125,7 +125,7 @@ int print_costs(int arr[80][21], entity *player);
 //Variables
 int rand_num;
 int count;
-entity_arr eq;
+entity_arr* eq;
 entity hikers[5]; //I think I can just do a big array of different entities??
 entity rivals[5];
 entity pacers[5];
@@ -157,7 +157,7 @@ int init_map(struct Map *m){
 
 	initialize_pq(&pq);
 
-	eq_init(&eq);
+	eq_init((&eq));
 
 	enqueue(&pq, g1.x, g1.y, '.');
 	enqueue(&pq, g2.x, g2.y, '.');
@@ -172,14 +172,17 @@ int init_map(struct Map *m){
 	init_world_edge(m);
 
 	//printf("Hello I make it here\n");
-	entity* test = NULL;
-	if(!malloc(sizeof(test))){
-		printf("this is the failure\n");
-		return -1;
+	//entity tmp = CreateEntity(HIKER, 1, 1);
+	entity* test;
+	if(!(test = malloc(sizeof(entity)))){
+	    printf("this is the failure\n");
+	    return -1;
 	}
-	*test = CreateEntity(HIKER, 1, 1);
-	printf("Here is an npc: %c\n", (*test).marker);
-	eq_add(&eq, 0, test);
+	(*test) = CreateEntity(HIKER, 1, 1);
+	printf("Here is an __npc__: %c\n", test->marker);
+	eq_add(eq, 0, test);
+	//void* v = NULL;
+	eq_visit_all(eq, print_entity);
 	free(test);
 
 	//printf("hello I make it here\n");

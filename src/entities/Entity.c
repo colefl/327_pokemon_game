@@ -75,6 +75,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = false;
+		//printf("x: %d, y: %d\n", x, y);
 		break;
 
 	case RIVAL:
@@ -100,6 +101,7 @@ entity CreateEntity(int id, int x, int y){
 
 	entity result = *tmp; //I have no idea why I did this I think it was supposed to be a temporary fix.
 	free(tmp);
+	//printf("Hello I make it here\n");
 	return result;
 }
 
