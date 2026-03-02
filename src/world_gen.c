@@ -117,6 +117,7 @@ int32_t cell_compare(const void *key, const void *with);
 int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]);
 static int getTerrainCost(char tile, entity *npc);
 int check_if_spawns_on(char tile, char spawnables[4]);
+int populate_entity(entity* entity, int rand_num);
 
 //Helper
 int print_board(struct Map *m);
@@ -170,6 +171,22 @@ int init_map(struct Map *m){
 	pepperInTrees(m);
 
 	init_world_edge(m);
+
+	//TODO: Queue a bunch of stuff. Probably should double check
+	//Refactor the entities into that stuff idk
+
+	int num_of_entities = rand_num % 3 + 10;
+
+	int idk;
+	for(idk = 0; idk < num_of_entities; idk++){
+		entity* test;
+		if(!(test = malloc(sizeof(entity)))){
+			    printf("this is the failure\n");
+			    return -1;
+			}
+		rand_num = rand() % 6;
+		(*test) = populate_entity(test, rand_num);
+	}
 
 	//printf("Hello I make it here\n");
 	//entity tmp = CreateEntity(HIKER, 1, 1);
@@ -834,8 +851,8 @@ int spawnEntities(entity entities[5], int id, struct Map *m){
 		entities[i] = CreateEntity(id, rand_x, rand_y);
 		//printf("hello I am spawning: %c\n", entities[0].marker);
 		while(!entities[i].isSpawned){
-				rand_x = rand() % 79;
-				rand_y = rand() % 19;
+				rand_x = rand() % 79 + 1;
+				rand_y = rand() % 19 + 1;
 				if(check_if_spawns_on(m->arr[rand_x][rand_y], entities->spawnsOn)){
 					//printf("Okay I'm getting put onto something\n");
 					m->arr[rand_x][rand_y] = entities[i].marker;
@@ -853,6 +870,22 @@ int spawnEntities(entity entities[5], int id, struct Map *m){
 			}
 	}
 	return 0;
+}
+
+/*
+ * random out of 6 choosing which entity is which
+ */
+entity populate_entity(entity* entity, int rand_num){
+	if(rand_num == 0){
+		return CreateEntity(HIKER, 1, 1);
+	}
+	if(rand_num == 1){
+		return CreateEntity(RIVAL, 1, 1);
+	}
+	if(rand_num == 2){
+		return CreateEntity(PACER, 1, 1);
+	}
+	return CreateEntity(PLAYER, 1, 1); //Placeholder for now I suppose
 }
 
 int check_if_spawns_on(char tile, char spawnables[4]){
