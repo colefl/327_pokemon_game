@@ -113,7 +113,8 @@ bool canGrow(struct queue_item p, struct Map *m);
 int pepperInTrees(struct Map *m);
 
 //SPAWNING ENTITIES
-int spawnEntities(entity entities[5], int id, struct Map *m);
+int spawnEntities(heap_t *eq, int id, struct Map *m);
+int spawnEntity(entity *npc, int id, struct Map *m);
 int32_t cell_compare(const void *key, const void *with);
 int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]);
 static int getTerrainCost(char tile, entity *npc);
@@ -267,9 +268,10 @@ int init_map(struct Map *m){
 	//south is at (m.entrances[2], WORLDY-1)
 //	connectN_S(m->entrances[North], 0, m->entrances[South], WORLDY - 1, m);
 
-	spawnEntities(hikers, HIKER,  m);
-	spawnEntities(rivals, RIVAL, m);
-	spawnEntities(pacers, PACER, m);
+	int num_of_npcs;
+	num_of_npcs = rand() % 4 + 9;
+
+	spawnEntities(&eq, num_of_npcs,  m);
 
 	//printf("hello I make it here to spawnEntities");
 
@@ -1021,46 +1023,76 @@ int check_if_spawns_on(char tile, char spawnables[4]){
 	return 0;
 }
 
+int spawnEntities(heap_t *eq, int rand_num, struct Map *m){
+	int rand_entity;
+	entity npc;
+	int i;
+
+	npc = CreateEntity(HIKER, 0,0);
+
+	for(i = 0; i < rand_num; i++){
+		rand_entity = rand() % 7;
+		if(rand_entity == 0){
+			spawnEntity(&npc, HIKER, m);
+			enqueue_entity(eq, &npc, 0);
+		}
+		if(rand_entity == 1){
+			spawnEntity(&npc, RIVAL, m);
+			enqueue_entity(eq, &npc, 0);
+		}
+		if(rand_entity == 2){
+			spawnEntity(&npc, PACER, m);
+			enqueue_entity(eq, &npc, 0);
+		}
+		if(rand_entity == 3){
+			spawnEntity(&npc, WANDERER, m);
+			enqueue_entity(eq, &npc, 0);
+		}
+		if(rand_entity == 4){
+			spawnEntity(&npc, SENTRY, m);
+			enqueue_entity(eq, &npc, 0);
+		}
+		if(rand_entity == 5){
+			spawnEntity(&npc, SENTRY, m);
+			enqueue_entity(eq, &npc, 0);
+		}
+		if(rand_entity == 6){
+			spawnEntity(&npc, EXPLORERS, m);
+			enqueue_entity(eq, &npc, 0);
+		}
+	}
+	//free(npc);
+
+	return 0;
+}
+
 //This is a not-dynamic spawning of entities on the world
 /*
  * I think I could improve this algorithm by making it pass in a queue of entities/d_array
  * Currently, it requires for there to be a special magical awesome number of 5 entities for it to work.
  */
-int spawnEntities(entity entities[5], int id, struct Map *m){
+int spawnEntity(entity *npc, int id, struct Map *m){
 	//Spawn stuff and things
 	int rand_x;
 	int rand_y;
-	int i;
-	//int attempts = 0;
-	for(i = 0; i < 5; i++){
-		//if(entities[i] == NULL){ //NEED TO ADD SOME CATCHES FOR  NULL VALUES
-		//	continue;
-		//}
-		entities[i] = CreateEntity(id, rand_x, rand_y);
+		//(*npc) = CreateEntity(id, rand_x, rand_y); //Actual npc creation with garbage values set
 		//printf("hello I am spawning: %c\n", entities[0].marker);
-		while(!entities[i].isSpawned){
+		while(!npc->isSpawned){
 				rand_x = rand() % 78 + 1;
 				rand_y = rand() % 19 + 1;
-				if(check_if_spawns_on(m->arr[rand_x][rand_y], entities->spawnsOn)){
+				if(check_if_spawns_on(m->arr[rand_x][rand_y], npc->spawnsOn)){
 					//printf("Okay I'm getting put onto something\n");
-					entities[i].prev_tile = m->arr[rand_x][rand_y];
-					m->arr[rand_x][rand_y] = entities[i].marker;
+					npc->prev_tile = m->arr[rand_x][rand_y];
+					m->arr[rand_x][rand_y] = npc->marker;
 					//printf("Here is what's spawning: %c\n", entities[i].marker);
-					entities[i].isSpawned = true;
-					entities[i].x = rand_x;
-					entities[i].y = rand_y;
-					entities[i].direction = rand() % 8;
+					npc->isSpawned = true;
+					npc->x = rand_x;
+					npc->y = rand_y;
+					npc->direction = rand() % 8;
 				} else {
-					//printf("there will be many prints hopefully\n");
-					//attempts++;
 				    continue;
 				}
-//				if(m->arr[entities[i].x][entities[i].y] != entities[i].marker){//this is a really stupid way to do it but oh well
-//					printf("failed to spawn entity\n");
-//					deleteEntity(&entities[i]);
-//				}
 			}
-	}
 	return 0;
 }
 
