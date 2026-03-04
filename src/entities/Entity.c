@@ -53,6 +53,7 @@ entity CreateEntity(int id, int x, int y){
 	int player_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, 10, 10, 20, 10, 10, INT_MAX, 10, INT_MAX};
 	int hiker_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, 10, 50, 50, 15, 10, INT_MAX, INT_MAX, INT_MAX};
 	int rival_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, 10, 50, 50, 20, 10, INT_MAX, INT_MAX, INT_MAX};
+	int default_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX, INT_MAX, 10, 10, INT_MAX, INT_MAX, INT_MAX};
 	entity *tmp;
 	if(!(tmp = malloc(sizeof (*tmp)))){ //MAKE SURE WE FREE THIS DATA TYPE
 		return *tmp;
@@ -74,7 +75,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->marker='h';
 		tmp->spawnsOn[0]=':';
 		copyArrs(tmp->weights, hiker_weights);
-		printArr(tmp->weights);
+		//printArr(tmp->weights);
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = false;
@@ -97,6 +98,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->spawnsOn[0] = '.';
 		tmp->spawnsOn[1]=':';
 		//We don't need this to be the case
+		copyArrs(tmp->weights, default_weights);
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = false;
@@ -107,6 +109,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->marker='w';
 		tmp->spawnsOn[0] = '.';
 		tmp->spawnsOn[1] = ':';
+		copyArrs(tmp->weights, default_weights);
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = false;
@@ -129,6 +132,7 @@ entity CreateEntity(int id, int x, int y){
 			tmp->spawnsOn[0] = '.';
 			tmp->spawnsOn[1]=':';
 			//We don't need this to be the case
+			copyArrs(tmp->weights, default_weights);
 			tmp->x = x;
 			tmp->y = y;
 			tmp->isSpawned = false;

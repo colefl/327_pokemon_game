@@ -123,7 +123,9 @@ int check_if_spawns_on(char tile, char spawnables[4]);
 //GAMELOOP
 void runGameLoop(heap_t *eq, struct Map *m);
 int handle_npc_movement(entity *npc, int dist[80][21] , struct Map *m);
+int handle_wanderer_movement(entity *npc, struct Map *m);
 int handle_pacer_movement(entity *npc, struct Map *m);
+int handle_explorer_movement(entity *npc, struct Map *m);
 static int is_border(int x, int y, struct Map *m);
 static int is_occupied(int x, int y, struct Map *m, entity *self);
 
@@ -135,9 +137,6 @@ int print_costs(int arr[80][21], entity *player);
 int rand_num;
 int count;
 //entity_arr* eq;
-entity hikers[5]; //I think I can just do a big array of different entities??
-entity rivals[5];
-entity pacers[5];
 entity player;
 //TODO: make a priority queue for moves and pass it through the game loop at the end. This likely breaks how the overarching map works but oh well I guess we aren't supposed to care yet
 heap_t eq;
@@ -184,37 +183,6 @@ int init_map(struct Map *m){
 
 	init_world_edge(m);
 
-	//TODO: Queue a bunch of stuff. Probably should double check
-	//Refactor the entities into that stuff idk
-
-//	int num_of_entities = rand_num % 3 + 10;
-//
-//	int idk;
-//	for(idk = 0; idk < num_of_entities; idk++){
-//		entity* test;
-//		if(!(test = malloc(sizeof(entity)))){
-//			    printf("this is the failure\n");
-//			    return -1;
-//			}
-//		rand_num = rand() % 6;
-//		(*test) = populate_entity(test, rand_num);
-//	}
-//
-//	//printf("Hello I make it here\n");
-//	//entity tmp = CreateEntity(HIKER, 1, 1);
-//	entity* test;
-//	if(!(test = malloc(sizeof(entity)))){
-//	    printf("this is the failure\n");
-//	    return -1;
-//	}
-//	(*test) = CreateEntity(HIKER, 1, 1);
-//	printf("Here is an __npc__: %c\n", test->marker);
-//	eq_add(eq, 0, test);
-//	//void* v = NULL;
-//	eq_visit_all(eq, print_entity);
-//	free(test);
-
-	//printf("hello I make it here\n");
 	/*
 	 * Edge possibilities
 	 * North edge = connect east and west, have south connect upwards until it hits '#'
@@ -275,8 +243,12 @@ int init_map(struct Map *m){
 
 	//printf("hello I make it here to spawnEntities");
 
-	dijkstrasAlgo(m, &player, &hikers[0], hiker_dist);
-	dijkstrasAlgo(m, &player, &rivals[0], rival_dist);
+	entity hiker_template = CreateEntity(HIKER, 0, 0);
+	entity rival_template = CreateEntity(RIVAL, 0, 0);
+	dijkstrasAlgo(m, &player, &hiker_template, hiker_dist);
+	dijkstrasAlgo(m, &player, &rival_template, rival_dist);
+
+	enqueue_entity(&eq, &player, 0);
 
 
 	//print_costs(hiker_dist, &player);
@@ -288,6 +260,7 @@ int init_map(struct Map *m){
 }
 
 void runGameLoop(heap_t *eq, struct Map *m) {
+
     int current_time = 0;
     entity_move *event;
 
@@ -301,14 +274,17 @@ void runGameLoop(heap_t *eq, struct Map *m) {
 
         switch (event->npc->id) {
 
-        case PLAYER:
-            dijkstrasAlgo(m, &player, &hikers[0], hiker_dist);
-            dijkstrasAlgo(m, &player, &rivals[0], rival_dist);
+        case PLAYER: {
+        	//printf("Player pos: x=%d y=%d\n", player.x, player.y);
+        	entity hiker_template = CreateEntity(HIKER, 0, 0);
+        	entity rival_template = CreateEntity(RIVAL, 0, 0);
+        	dijkstrasAlgo(m, &player, &hiker_template, hiker_dist);
+        	dijkstrasAlgo(m, &player, &rival_template, rival_dist);
             print_board(m);
-            usleep(250000);
+            usleep(500000);
             terrain_cost = 10;
             break;
-
+        }
         case HIKER:
             terrain_cost = handle_npc_movement(event->npc, hiker_dist, m);
             break;
@@ -320,6 +296,14 @@ void runGameLoop(heap_t *eq, struct Map *m) {
         case PACER:
             terrain_cost = handle_pacer_movement(event->npc, m);
             break;
+
+        case WANDERER:
+        	terrain_cost = handle_wanderer_movement(event->npc, m);
+        	break;
+
+        case EXPLORERS: //Oops did not mean to make that plural
+        	terrain_cost = handle_explorer_movement(event->npc, m);
+        	break;
 
         default:
             free(event);
@@ -355,59 +339,98 @@ static int is_occupied(int x, int y, struct Map *m, entity *self)
     return 0;
 }
 
-int handle_npc_movement(entity *npc, int dist[80][21] , struct Map *m){
+int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m) {
+    int dx[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+    int dy[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
 
-	int dx[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
-	int dy[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+    int best_x = npc->x;
+    int best_y = npc->y;
+    int bestCost = INT_MAX;   /* fixed -- was dist[npc->x][npc->y] */
 
-	int current_x = npc->x;
-	int current_y = npc->y;
-	int bestCost = dist[current_x][current_y];
+    int i;
+    for (i = 0; i < 8; i++) {
+        int new_x = npc->x + dx[i];
+        int new_y = npc->y + dy[i];
 
-	int i;
-	for(i = 0; i < 8; i++){
-		int new_x = npc->x + dx[i];
-		int new_y = npc->y + dy[i];
+        if (is_occupied(new_x, new_y, m, npc)) continue;
+        if (is_border(new_x, new_y, m)) continue;
+        if (dist[new_x][new_y] == INT_MAX) continue;
 
-		if(is_occupied(new_x, new_y, m, npc)){
-			continue;
-		}
+        if (dist[new_x][new_y] < bestCost) {
+            bestCost = dist[new_x][new_y];
+            best_x   = new_x;
+            best_y   = new_y;
+        }
+    }
 
-		if(is_border(new_x, new_y, m)){
-			continue;
-		}
+    /* Check BEFORE updating position */
+    if (best_x == npc->x && best_y == npc->y) {
+        return getTerrainCost(m->arr[npc->x][npc->y], npc);
+    }
 
-		if (dist[new_x][new_y] == INT_MAX) {
-			continue;
-		}
+    /* Now safe to update */
+    m->arr[npc->x][npc->y] = npc->prev_tile;
+    npc->prev_tile          = m->arr[best_x][best_y];
+    npc->x = best_x;
+    npc->y = best_y;
+    m->arr[npc->x][npc->y] = npc->marker;
 
-		if (dist[new_x][new_y] < bestCost) {
-		    bestCost = dist[new_x][new_y];
-		    current_x    = new_x;
-		    current_y    = new_y;
-		 }
-	}
+    return getTerrainCost(npc->prev_tile, npc);
+}
 
-	//restoring the previous tiles
-	m->arr[npc->x][npc->y] = npc->prev_tile;
-	npc->prev_tile = m->arr[current_x][current_y];
-	npc->x = current_x;
-	npc->y = current_y;
-	m->arr[npc->x][npc->y] = npc->marker;
+int handle_wanderer_movement(entity *npc, struct Map *m) {
+    int dx[8] = { 0,  0,  1, -1,  1, -1,  1, -1};
+    int dy[8] = {-1,  1,  0,  0, -1,  1,  1, -1};
 
-	//In case the hiker doesn't move, this way it stays in the queue
-	if (current_x == npc->x && current_y == npc->y) {
-	     return getTerrainCost(m->arr[npc->x][npc->y], npc);
-	 }
+    char home_terrain = npc->prev_tile;
 
-	return getTerrainCost(npc->prev_tile, npc);
+    int nx = npc->x + dx[npc->direction];
+    int ny = npc->y + dy[npc->direction];
+
+    /* Try current direction first */
+    if (nx >= 0 && nx < 80 && ny >= 0 && ny < 21
+        && !is_border(nx, ny, m)
+        && !is_occupied(nx, ny, m, npc)
+        && m->arr[nx][ny] == home_terrain) {
+
+        m->arr[npc->x][npc->y] = npc->prev_tile;
+        npc->x = nx;
+        npc->y = ny;
+        m->arr[npc->x][npc->y] = npc->marker;
+        return getTerrainCost(npc->prev_tile, npc);
+    }
+
+    /* Current direction blocked -- try all other directions */
+    int i;
+    for (i = 0; i < 8; i++) {
+        if (i == npc->direction) continue;  /* already tried this one */
+
+        nx = npc->x + dx[i];
+        ny = npc->y + dy[i];
+
+        if (nx >= 0 && nx < 80 && ny >= 0 && ny < 21
+            && !is_border(nx, ny, m)
+            && !is_occupied(nx, ny, m, npc)
+            && m->arr[nx][ny] == home_terrain) {
+
+            npc->direction = i;   /* update to new direction */
+            m->arr[npc->x][npc->y] = npc->prev_tile;
+            npc->x = nx;
+            npc->y = ny;
+            m->arr[npc->x][npc->y] = npc->marker;
+            return getTerrainCost(npc->prev_tile, npc);
+        }
+    }
+
+    /* Completely surrounded -- stay put */
+    return getTerrainCost(m->arr[npc->x][npc->y], npc);
 }
 
 int handle_pacer_movement(entity *npc, struct Map *m)
 {
 
-	int dx[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
-	int dy[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+	int dx[8] = { 0,  0,  1, -1,  1, -1,  1, -1};
+	int dy[8] = {-1,  1,  0,  0, -1,  1,  1, -1};
 
     /* Try current direction first, then the reverse */
     int dirs_to_try[2];
@@ -438,16 +461,64 @@ int handle_pacer_movement(entity *npc, struct Map *m)
         npc->direction = dir;
 
         /* Move */
-        m->arr[npc->x][npc->y] = npc->prev_tile;
-        npc->prev_tile           = m->arr[nx][ny];
+        m->arr[npc->x][npc->y] = npc->prev_tile;   /* restore what was under us */
         npc->x = nx;
         npc->y = ny;
+        /* prev_tile stays the same -- pacer/wanderer always moves on the same terrain */
         m->arr[npc->x][npc->y] = npc->marker;
 
         return getTerrainCost(npc->prev_tile, npc);
     }
 
     /* Completely blocked -- stay put */
+    return getTerrainCost(m->arr[npc->x][npc->y], npc);
+}
+
+int handle_explorer_movement(entity *npc, struct Map *m) {
+    int dx[8] = { 0,  0,  1, -1,  1, -1,  1, -1};
+    int dy[8] = {-1,  1,  0,  0, -1,  1,  1, -1};
+
+    int nx = npc->x + dx[npc->direction];
+    int ny = npc->y + dy[npc->direction];
+
+    /* Try current direction first -- any passable tile is fine */
+    if (nx >= 0 && nx < 80 && ny >= 0 && ny < 21
+        && !is_border(nx, ny, m)
+        && !is_occupied(nx, ny, m, npc)
+        && getTerrainCost(m->arr[nx][ny], npc) != INT_MAX) {
+
+        m->arr[npc->x][npc->y] = npc->prev_tile;
+        npc->prev_tile          = m->arr[nx][ny];
+        npc->x = nx;
+        npc->y = ny;
+        m->arr[npc->x][npc->y] = npc->marker;
+        return getTerrainCost(npc->prev_tile, npc);
+    }
+
+    /* Current direction blocked -- try all others */
+    int i;
+    for (i = 0; i < 8; i++) {
+        if (i == npc->direction) continue;
+
+        nx = npc->x + dx[i];
+        ny = npc->y + dy[i];
+
+        if (nx >= 0 && nx < 80 && ny >= 0 && ny < 21
+            && !is_border(nx, ny, m)
+            && !is_occupied(nx, ny, m, npc)
+            && getTerrainCost(m->arr[nx][ny], npc) != INT_MAX) {
+
+            npc->direction = i;
+            m->arr[npc->x][npc->y] = npc->prev_tile;
+            npc->prev_tile          = m->arr[nx][ny];
+            npc->x = nx;
+            npc->y = ny;
+            m->arr[npc->x][npc->y] = npc->marker;
+            return getTerrainCost(npc->prev_tile, npc);
+        }
+    }
+
+    /* Completely surrounded by impassable tiles -- stay put */
     return getTerrainCost(m->arr[npc->x][npc->y], npc);
 }
 
@@ -561,7 +632,8 @@ int connectE_W(int ex, int ey, int wx, int wy, struct Map *m){
 		}
 		if(count >= pSpawn && !pSpawned){
 			player = CreateEntity(PLAYER, wx, wy);
-			m->arr[wx][wy] =  player.marker;
+			player.prev_tile = '#'; //Spawns on a path for now
+			m->arr[wx][wy] = player.marker;
 			pSpawned = true;
 			rand_num = rand();
 		}
@@ -1024,47 +1096,22 @@ int check_if_spawns_on(char tile, char spawnables[4]){
 }
 
 int spawnEntities(heap_t *eq, int rand_num, struct Map *m){
-	int rand_entity;
-	entity npc;
 	int i;
-
-	npc = CreateEntity(HIKER, 0,0);
-
-	for(i = 0; i < rand_num; i++){
-		rand_entity = rand() % 7;
-		if(rand_entity == 0){
-			spawnEntity(&npc, HIKER, m);
-			enqueue_entity(eq, &npc, 0);
-		}
-		if(rand_entity == 1){
-			spawnEntity(&npc, RIVAL, m);
-			enqueue_entity(eq, &npc, 0);
-		}
-		if(rand_entity == 2){
-			spawnEntity(&npc, PACER, m);
-			enqueue_entity(eq, &npc, 0);
-		}
-		if(rand_entity == 3){
-			spawnEntity(&npc, WANDERER, m);
-			enqueue_entity(eq, &npc, 0);
-		}
-		if(rand_entity == 4){
-			spawnEntity(&npc, SENTRY, m);
-			enqueue_entity(eq, &npc, 0);
-		}
-		if(rand_entity == 5){
-			spawnEntity(&npc, SENTRY, m);
-			enqueue_entity(eq, &npc, 0);
-		}
-		if(rand_entity == 6){
-			spawnEntity(&npc, EXPLORERS, m);
-			enqueue_entity(eq, &npc, 0);
-		}
+	entity *explorer = malloc(sizeof(entity));
+	(*explorer) = CreateEntity(EXPLORERS, 0, 0);
+	spawnEntity(explorer, EXPLORERS, m);
+	enqueue_entity(eq, explorer, 0);
+	    for (i = 0; i < rand_num; i++) {
+	        entity *npc = malloc(sizeof(entity));
+	        int rand_entity = rand() % 6 + 1;
+	        (*npc) = CreateEntity(rand_entity, 0, 0);
+	        spawnEntity(npc, rand_entity, m);
+	        enqueue_entity(eq, npc, 0);
+	    }
+	    return 0;
 	}
 	//free(npc);
 
-	return 0;
-}
 
 //This is a not-dynamic spawning of entities on the world
 /*
@@ -1082,13 +1129,13 @@ int spawnEntity(entity *npc, int id, struct Map *m){
 				rand_y = rand() % 19 + 1;
 				if(check_if_spawns_on(m->arr[rand_x][rand_y], npc->spawnsOn)){
 					//printf("Okay I'm getting put onto something\n");
-					npc->prev_tile = m->arr[rand_x][rand_y];
-					m->arr[rand_x][rand_y] = npc->marker;
-					//printf("Here is what's spawning: %c\n", entities[i].marker);
-					npc->isSpawned = true;
 					npc->x = rand_x;
 					npc->y = rand_y;
+					npc->prev_tile = m->arr[rand_x][rand_y]; /* save terrain BEFORE overwriting */
 					npc->direction = rand() % 8;
+					//printf("Here is what's spawning: %c\n", entities[i].marker);
+					npc->isSpawned = true;
+
 				} else {
 				    continue;
 				}
