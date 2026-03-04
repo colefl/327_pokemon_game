@@ -97,9 +97,14 @@ int eq_visit_all(entity_arr *eq, void (*visitor)(void *)){
 	return 0;
 }
 
+entity eq_get_entity(entity_arr *eq, int index, void (*visitor)(void *)){
+	entity *tmp = (entity *) visitor((eq->a) + (index * (sizeof (entity))));
+	return tmp;
+}
+
 void print_entity(void *e){
     entity *npc = (entity *)e;
-    printf("Marker: %c, X: %d, Y: %d\n", npc->marker, npc->x, npc->y);
+    printf("Marker: %c, X: %d, Y: %d, isSpawned: %b\n", npc->marker, npc->x, npc->y, npc->isSpawned); //%b might be wrong for boolean
 }
 
 

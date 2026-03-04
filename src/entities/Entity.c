@@ -38,6 +38,8 @@ typedef struct {
 	char spawnsOn[4];
 	int weights[8];
 	bool isSpawned;
+	char prev_tile;
+	int direction;
 } entity;
 
 
@@ -87,6 +89,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->y = y;
 		tmp->isSpawned = false;
 		break;
+
 	case PACER:
 		tmp->id = PACER;
 		tmp->marker='p';
@@ -97,6 +100,38 @@ entity CreateEntity(int id, int x, int y){
 		tmp->y = y;
 		tmp->isSpawned = false;
 		break;
+
+	case WANDERER:
+		tmp->id = WANDERER;
+		tmp->marker='w';
+		tmp->spawnsOn[0] = '.';
+		tmp->spawnsOn[1] = ':';
+		tmp->x = x;
+		tmp->y = y;
+		tmp->isSpawned = false;
+		break;
+
+	case SENTRY:
+		tmp->id = SENTRY;
+		tmp->marker='s';
+		tmp->spawnsOn[0] = '.';
+		tmp->spawnsOn[1]=':';
+		//We don't need this to be the case
+		tmp->x = x;
+		tmp->y = y;
+		tmp->isSpawned = false;
+		break;
+
+	case EXPLORERS:
+			tmp->id = EXPLORERS;
+			tmp->marker='e';
+			tmp->spawnsOn[0] = '.';
+			tmp->spawnsOn[1]=':';
+			//We don't need this to be the case
+			tmp->x = x;
+			tmp->y = y;
+			tmp->isSpawned = false;
+			break;
 	}
 
 	entity result = *tmp; //I have no idea why I did this I think it was supposed to be a temporary fix.
