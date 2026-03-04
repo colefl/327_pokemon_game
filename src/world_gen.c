@@ -12,7 +12,7 @@
 #include "heap.h"
 //#include "stack.c"
 #include "point_queue.c"
-#include "entities/Entity.c"
+//#include "entities/Entity.c"
 //#include "entities/entity_d_array.c"
 #include "entities/entity_move_q.c"
 //#include "Maps.c"
@@ -118,7 +118,6 @@ int32_t cell_compare(const void *key, const void *with);
 int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]);
 static int getTerrainCost(char tile, entity *npc);
 int check_if_spawns_on(char tile, char spawnables[4]);
-int populate_entity(entity* entity, int rand_num);
 
 //GAMELOOP
 void runGameLoop(heap_t *eq, struct Map *m);
@@ -286,61 +285,51 @@ int init_map(struct Map *m){
 	return 0;
 }
 
-void runGameLoop(heap_t *eq, struct Map *m){
-	int current_time = 0;
-	entity_move *event;
+void runGameLoop(heap_t *eq, struct Map *m) {
+    int current_time = 0;
+    entity_move *event;
 
-	while(1){
-		event = dequeue_next(eq);
-			if(!event){
-				//Nothing is in the movement event queue
-				break;
-			}
+    while (1) {
+        event = dequeue_next(eq);
+        if (!event) break;
 
-			current_time = event->next_move;
+        current_time = event->next_move;
 
-			int terrain_cost = 10;
+        int terrain_cost = 10;
 
-			switch(event->npc->id){
+        switch (event->npc->id) {
 
-			case PLAYER:
-				//printf("player moved\n");
+        case PLAYER:
+            dijkstrasAlgo(m, &player, &hikers[0], hiker_dist);
+            dijkstrasAlgo(m, &player, &rivals[0], rival_dist);
+            print_board(m);
+            usleep(250000);
+            terrain_cost = 10;
+            break;
 
-				print_board(m);
+        case HIKER:
+            terrain_cost = handle_npc_movement(event->npc, hiker_dist, m);
+            break;
 
-				usleep(250000);
+        case RIVAL:
+            terrain_cost = handle_npc_movement(event->npc, rival_dist, m);
+            break;
 
-				terrain_cost = 10;
-				break;
+        case PACER:
+            terrain_cost = handle_pacer_movement(event->npc, m);
+            break;
 
-			case HIKER:
-				//printf("hiker moved\n");
-				terrain_cost = handle_npc_movement(event->npc, hiker_dist, m);
-				break;
+        default:
+            free(event);
+            continue;
+        }
 
-			case RIVAL:
-				terrain_cost = handle_npc_movement(event->npc, rival_dist, m);
-				//printf("rival moved\n");
-				break;
+        entity *npc = event->npc;
+        free(event);
 
-			case PACER:
-				//printf("pacer moved\n");
-				terrain_cost = handle_pacer_movement(event->npc, m);
-				break;
-
-			default:
-				continue;
-			}
-
-			entity *npc = event->npc;
-			free(event);
-
-			if (terrain_cost != INT_MAX) {
-			            uint32_t next_time = current_time + (uint32_t) terrain_cost;
-			            enqueue_entity(eq, event->npc, next_time);
-			}
-		}
-	}
+        enqueue_entity(eq, npc, current_time + (uint32_t) terrain_cost);
+    }
+}
 
 static int is_border(int x, int y, struct Map *m)
 {
@@ -435,7 +424,7 @@ int handle_pacer_movement(entity *npc, struct Map *m)
         if (nx < 0 || nx >= 80 || ny < 0 || ny >= 21) continue;
 
         /* No border tiles */
-        if (is_border_tile(nx, ny, m)) continue;
+        if (is_border(nx, ny, m)) continue;
 
         /* No occupied tiles */
         if (is_occupied(nx, ny, m, npc)) continue;
@@ -1022,6 +1011,16 @@ int get_num(int count, struct Map *m){
 	return 0;
 }
 
+int check_if_spawns_on(char tile, char spawnables[4]){
+	int i;
+	for(i = 0; i < 4; i++){
+		if(tile == spawnables[i]){
+			return 1;
+		}
+	}
+	return 0;
+}
+
 //This is a not-dynamic spawning of entities on the world
 /*
  * I think I could improve this algorithm by making it pass in a queue of entities/d_array
@@ -1040,13 +1039,17 @@ int spawnEntities(entity entities[5], int id, struct Map *m){
 		entities[i] = CreateEntity(id, rand_x, rand_y);
 		//printf("hello I am spawning: %c\n", entities[0].marker);
 		while(!entities[i].isSpawned){
-				rand_x = rand() % 79 + 1;
+				rand_x = rand() % 78 + 1;
 				rand_y = rand() % 19 + 1;
 				if(check_if_spawns_on(m->arr[rand_x][rand_y], entities->spawnsOn)){
 					//printf("Okay I'm getting put onto something\n");
+					entities[i].prev_tile = m->arr[rand_x][rand_y];
 					m->arr[rand_x][rand_y] = entities[i].marker;
 					//printf("Here is what's spawning: %c\n", entities[i].marker);
 					entities[i].isSpawned = true;
+					entities[i].x = rand_x;
+					entities[i].y = rand_y;
+					entities[i].direction = rand() % 8;
 				} else {
 					//printf("there will be many prints hopefully\n");
 					//attempts++;
@@ -1057,32 +1060,6 @@ int spawnEntities(entity entities[5], int id, struct Map *m){
 //					deleteEntity(&entities[i]);
 //				}
 			}
-	}
-	return 0;
-}
-
-/*
- * random out of 6 choosing which entity is which
- */
-entity populate_entity(entity* entity, int rand_num){
-	if(rand_num == 0){
-		return CreateEntity(HIKER, 1, 1);
-	}
-	if(rand_num == 1){
-		return CreateEntity(RIVAL, 1, 1);
-	}
-	if(rand_num == 2){
-		return CreateEntity(PACER, 1, 1);
-	}
-	return CreateEntity(PLAYER, 1, 1); //Placeholder for now I suppose
-}
-
-int check_if_spawns_on(char tile, char spawnables[4]){
-	int i;
-	for(i = 0; i < 4; i++){
-		if(tile == spawnables[i]){
-			return 1;
-		}
 	}
 	return 0;
 }

@@ -10,6 +10,8 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include "../heap.h"
+
 #include "Entity.c"
 
 

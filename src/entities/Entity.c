@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
 enum CharType{
 	PLAYER,
 	HIKER,
