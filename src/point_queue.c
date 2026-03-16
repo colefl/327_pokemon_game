@@ -9,20 +9,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include "point_queue.h"
 
-
-struct queue_item{
-	int x; //Will hold the point's x
-	int y; //Will hold the point's y
-	char value;
-	struct queue_item *next;
-};
-
-struct point_queue{
-	struct queue_item *front;
-	struct queue_item *rear;
-	int size;
-};
 
 void initialize_pq(struct point_queue *pq){
 	pq->front = NULL;

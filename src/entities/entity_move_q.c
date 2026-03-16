@@ -12,13 +12,9 @@
 
 #include "../heap.h"
 
-#include "Entity.c"
+#include "Entity.h"
+#include "entity_move_q.h"
 
-
-typedef struct entity_move {
-	entity *npc;
-	int next_move;
-} entity_move;
 
 static int32_t compare_events(const void *a, const void *b)
 {

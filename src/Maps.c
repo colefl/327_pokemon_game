@@ -5,7 +5,7 @@
  *      Author: colef
  */
 
-#include "world_gen.c"
+#include "world_gen.h"
 
 typedef struct Maps{
 	struct Map* m[401][401];

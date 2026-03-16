@@ -12,18 +12,10 @@
 #include "heap.h"
 //#include "stack.c"
 #include "point_queue.c"
+#include "pathMaker.h"
 //#include "entities/Entity.c"
 //#include "entities/entity_d_array.c"
-#include "entities/entity_move_q.c"
 //#include "Maps.c"
-
-enum Entrances {
-	North,
-	West,
-	South,
-	East,
-	OutOfBounds = 99
-};
 
 /*
  * floor is 80 by 21, terminal is 80 by 24
@@ -43,68 +35,29 @@ enum Entrances {
  *For the pokemart, just search for a straight place along the path that is 2 wide.
  */
 
-/*
- * Should create a struct for the maps.
- * Has thegate locations
- *
- * Should create another struct for maps for containing all of the maps.
- * This is going to be pointers so we can have null pointers(all maps are initially null)
- * When you go to a new map, check to see if it's null, if it's null, malloc a map
- *
- * Iterate over the whole map and deconstruct them before freeing the pointer
- *
- * World coords; we start in the center
- * The center is 200,200. But for the user's case, we subtract 200, 200.
- */
-
-struct Map{
-	char arr[80][21];
-	bool visited[80][21];
-	int entrances[4];
-	bool omitDir[4];
-};
-
-struct point{
-	int x;
-	int y;
-	//bool hasGone;
-	//bool growing;
-	//struct point *next;
-} g1, g2, tg1, tg2, w; //Got from Brian W Kernighan and Dennis M. Ritchie's book
-
-typedef struct {
-    int x;
-    int y;
-    int cost;
-} map_cell_t;
-
-//Variables
-#define WORLDX 80
-#define WORLDY 21
-
 //Methods
 
 //WORLD EDGE
 int init_world_edge(struct Map *current_map);
 
-int connectE_W(int ex, int ey, int wx, int wy, struct Map *m);
-int connectN_S(int nx, int ny, int sx, int sy, struct Map *m);
+//int connectE_W(int ex, int ey, int wx, int wy, struct Map *m);
+//int connectN_S(int nx, int ny, int sx, int sy, struct Map *m);
+//
+////Edge Cases
+//int connect_upwards(int sx, int sy, struct Map *m);
+//int connect_down(int nx, int ny, struct Map *m);
+//int connect_right(int wx, int wy, struct Map *m);
+//int connect_left(int ex, int ey, struct Map *m);
+//
+////Corners
+//int connect_southeast_corner(struct Map *m);
+//int connect_southwest_corner(struct Map *m);
+//int connect_northwest_corner(struct Map *m);
+//int connect_northeast_corner(struct Map *m);
 
-//Edge Cases
-int connect_upwards(int sx, int sy, struct Map *m);
-int connect_down(int nx, int ny, struct Map *m);
-int connect_right(int wx, int wy, struct Map *m);
-int connect_left(int ex, int ey, struct Map *m);
-
-//Corners
-int connect_southeast_corner(struct Map *m);
-int connect_southwest_corner(struct Map *m);
-int connect_northwest_corner(struct Map *m);
-int connect_northeast_corner(struct Map *m);
-
-
-bool checkForCenter(int wx, int wy, struct Map *m);
-bool checkForMart(int nx, int ny, struct Map *m);
+//
+//bool checkForCenter(int wx, int wy, struct Map *m);
+//bool checkForMart(int nx, int ny, struct Map *m);
 
 //WORLD SPREAD
 int get_num(int count, struct Map *m);
@@ -192,46 +145,52 @@ int init_map(struct Map *m){
 	 */
 	//Need to add for the edges too now
 	//Top left corner
-	if(m->entrances[North] == OutOfBounds && m->entrances[West] == OutOfBounds){
-		connect_northwest_corner(m);
+//	if(m->entrances[North] == OutOfBounds && m->entrances[West] == OutOfBounds){
+//		connect_northwest_corner(m);
+//
+//	//Top Right Corner
+//	} else if (m->entrances[North] == OutOfBounds && m->entrances[East] == OutOfBounds){
+//		connect_northeast_corner(m);
+//
+//	//Bottom Right Corner
+//	} else if (m->entrances[South] == OutOfBounds && m->entrances[West] == OutOfBounds){
+//		connect_southwest_corner(m);
+//
+//	//Bottom Left Corner
+//	} else if (m->entrances[South] == OutOfBounds && m->entrances[East] == OutOfBounds){
+//		connect_southeast_corner(m);
+//
+//	//North Edge
+//	} else if(m->entrances[North] == OutOfBounds){
+//	    connectE_W(WORLDX - 1, m->entrances[East], 0, m->entrances[West], m);
+//	    connect_upwards(m->entrances[South], WORLDY - 1, m);
+//
+//	//South Edge
+//	} else if(m->entrances[South] == OutOfBounds){
+//	    connectE_W(WORLDX - 1, m->entrances[East], 0, m->entrances[West], m);
+//	    connect_down(m->entrances[North], 0, m);
+//
+//	//East Edge
+//	} else if(m->entrances[East] == OutOfBounds){
+//	    connectN_S(m->entrances[North], 0, m->entrances[South], WORLDY - 1, m);
+//	    connect_right(0, m->entrances[West], m);
+//
+//	//West Edge
+//	} else if(m->entrances[West] == OutOfBounds){
+//	    connectN_S(m->entrances[North], 0, m->entrances[South], WORLDY - 1, m);
+//	    connect_left(WORLDX - 1, m->entrances[East], m);
+//
+//	//South Edge
+//	} else {
+//	    connectN_S(m->entrances[North], 0, m->entrances[South], WORLDY - 1, m);
+//	    connectE_W(WORLDX - 1, m->entrances[East], 0, m->entrances[West], m);
+//	}
 
-	//Top Right Corner
-	} else if (m->entrances[North] == OutOfBounds && m->entrances[East] == OutOfBounds){
-		connect_northeast_corner(m);
+	pathMaker pm = makePathMaker(m, player);
+	makePaths(&pm);         // pass address
+	m = pm.map;             // pm is not a pointer, use dot notation
+	player = pm.player;
 
-	//Bottom Right Corner
-	} else if (m->entrances[South] == OutOfBounds && m->entrances[West] == OutOfBounds){
-		connect_southwest_corner(m);
-
-	//Bottom Left Corner
-	} else if (m->entrances[South] == OutOfBounds && m->entrances[East] == OutOfBounds){
-		connect_southeast_corner(m);
-
-	//North Edge
-	} else if(m->entrances[North] == OutOfBounds){
-	    connectE_W(WORLDX - 1, m->entrances[East], 0, m->entrances[West], m);
-	    connect_upwards(m->entrances[South], WORLDY - 1, m);
-
-	//South Edge
-	} else if(m->entrances[South] == OutOfBounds){
-	    connectE_W(WORLDX - 1, m->entrances[East], 0, m->entrances[West], m);
-	    connect_down(m->entrances[North], 0, m);
-
-	//East Edge
-	} else if(m->entrances[East] == OutOfBounds){
-	    connectN_S(m->entrances[North], 0, m->entrances[South], WORLDY - 1, m);
-	    connect_right(0, m->entrances[West], m);
-
-	//West Edge
-	} else if(m->entrances[West] == OutOfBounds){
-	    connectN_S(m->entrances[North], 0, m->entrances[South], WORLDY - 1, m);
-	    connect_left(WORLDX - 1, m->entrances[East], m);
-
-	//South Edge
-	} else {
-	    connectN_S(m->entrances[North], 0, m->entrances[South], WORLDY - 1, m);
-	    connectE_W(WORLDX - 1, m->entrances[East], 0, m->entrances[West], m);
-	}
 	//north is at (m.entrances[0], 0)
 	//south is at (m.entrances[2], WORLDY-1)
 //	connectN_S(m->entrances[North], 0, m->entrances[South], WORLDY - 1, m);
@@ -584,413 +543,413 @@ int init_world_edge(struct Map *current_map){
 	return 0;
 }
 
-/*
-Connects the east and west paths
-*/
-int connectE_W(int ex, int ey, int wx, int wy, struct Map *m){
-	int rand_num;
-	int count = 0;
-	int pSpawn;
-	bool pSpawned = false;
-	bool spawned = false;
-
-	//printf("hello I make it here to connect E_W\n");
-	while(wx != ex || wy != ey){
-		rand_num = rand();
-		pSpawn = rand_num % 400 + 1;
-		if(rand_num % 2 == 0 && wx != ex){
-			if(wx + 1 < WORLDX && m->arr[wx + 1][wy] != '%' && m->arr[wx + 1][wy] != 'C' && m->arr[wx + 1][wy] != 'M'){ //Checking to the right
-				wx++;
-				m->arr[wx][wy] = '#';
-				count++;
-			}
-			else if(wy > 0 && m->arr[wx][wy - 1] != '%' && m->arr[wx][wy - 1] != 'C' && m->arr[wx][wy - 1] != 'M'){ //Checking to go down if blocked
-				wy--;
-				m->arr[wx][wy] = '#';
-			}
-			else if(wy + 1 < WORLDY && m->arr[wx][wy + 1] != '%' && m->arr[wx][wy + 1] != 'C' && m->arr[wx][wy + 1] != 'M'){ //Checking to go up
-				wy++;
-				m->arr[wx][wy] = '#';
-			}
-		} else {
-			if (ey < wy && wy > 0 && m->arr[wx][wy - 1] != '%' && m->arr[wx][wy - 1] != 'C' && m->arr[wx][wy - 1] != 'M'){ //Checking to go down
-				wy--;
-				m->arr[wx][wy] = '#';
-			} else if (ey > wy && wy + 1 < WORLDY && m->arr[wx][wy + 1] != '%' && m->arr[wx][wy + 1] != 'C' && m->arr[wx][wy + 1] != 'M'){ //Checking to go up if stuck
-				wy++;
-				m->arr[wx][wy] = '#';
-			}
-			else if(wx + 1 < WORLDX && m->arr[wx + 1][wy] != '%' && m->arr[wx + 1][wy] != 'C' && m->arr[wx + 1][wy] != 'M'){ //Checking to go right
-				wx++;
-				m->arr[wx][wy] = '#';
-				count++;
-			}
-		}
-
-		if(count > 5 && !spawned){
-			spawned = checkForCenter(wx, wy, m);
-		}
-		if(count >= pSpawn && !pSpawned){
-			player = CreateEntity(PLAYER, wx, wy);
-			player.prev_tile = '#'; //Spawns on a path for now
-			m->arr[wx][wy] = player.marker;
-			pSpawned = true;
-			rand_num = rand();
-		}
-	}
-	return 0;
-}
-
-/*
-Connects the north and south paths
-*/
-int connectN_S(int nx, int ny, int sx, int sy, struct Map *m){
-	bool spawned = false;
-	int count = 0;
-	int rand_num;
-
-	//printf("hello I make it to connectN_S\n");
-	while(nx != sx || ny != sy){
-		rand_num = rand();
-		if(rand_num % 2 == 0 && ny != sy){
-			if(ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
-				ny++;
-				m->arr[nx][ny] = '#';
-				count++;
-			}
-			else if(nx > 0 && m->arr[nx - 1][ny] != '%' && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M'){
-				nx--;
-				m->arr[nx][ny] = '#';
-			}
-			else if(nx + 1 < WORLDX && m->arr[nx + 1][ny] != '%' && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M'){
-				nx++;
-				m->arr[nx][ny] = '#';
-			}
-		} else {
-			if (nx < sx && nx + 1 < WORLDX && m->arr[nx + 1][ny] != '%' && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M'){
-				nx++;
-				m->arr[nx][ny] = '#';
-			} else if (nx > sx && nx > 0 && m->arr[nx - 1][ny] != '%' && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M'){
-				nx--;
-				m->arr[nx][ny] = '#';
-			}
-			else if(ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
-				ny++;
-				m->arr[nx][ny] = '#';
-				count++;
-			}
-		}
-
-		if(count > 6 && !spawned){
-			spawned = checkForMart(nx, ny, m);
-		}
-	}
-
-	return 0;
-}
-
-int connect_upwards(int sx, int sy, struct Map *m){
-	rand_num = rand();
-	printf("starting y: %d | starting x: %d\n", sy, sx);
-
-	//Continue until we hit a path '#'
-	while(sy > 0 && m->arr[sx][sy - 1] != '#'){
-		if(rand_num % 2 == 0){
-			if(sy > 0 && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
-				sy--;
-				m->arr[sx][sy] = '#';
-			} else if(sx + 1 < WORLDX && m->arr[sx + 1][sy] != 'C' && m->arr[sx + 1][sy] != 'M' && m->arr[sx+1][sy] != '%'){
-				sx++;
-				m->arr[sx][sy] = '#';
-			} else if(sx > 0 && m->arr[sx - 1][sy] != 'C' && m->arr[sx - 1][sy] != 'M' && m->arr[sx - 1][sy] != '%'){
-				sx--;
-				m->arr[sx][sy] = '#';
-			}
-		} else {
-			rand_num = rand();
-			if(rand_num % 2 == 0 && sx + 1 < WORLDX && m->arr[sx + 1][sy] != 'C' && m->arr[sx + 1][sy] != 'M' && m->arr[sx - 1][sy] != '%'){
-				sx++;
-				m->arr[sx][sy] = '#';
-			} else if(sx > 0 && m->arr[sx - 1][sy] != 'C' && m->arr[sx - 1][sy] != 'M' && m->arr[sx - 1][sy] != '%'){
-				sx--;
-				m->arr[sx][sy] = '#';
-			} else if(sy > 0 && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
-				sy--;
-				m->arr[sx][sy] = '#';
-			}
-		}
-		rand_num = rand();
-	}
-	return 0;
-}
-
-int connect_down(int nx, int ny, struct Map *m){
-	rand_num = rand();
-	printf("starting y: %d | starting x: %d\n", ny, nx);
-
-	//Continue until we hit a path '#' or reach the bottom
-	while(ny < WORLDY - 1 && m->arr[nx][ny + 1] != '#'){
-		if(rand_num % 2 == 0){
-			if(ny + 1 < WORLDY && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
-				ny++;
-				m->arr[nx][ny] = '#';
-			} else if(nx + 1 < WORLDX && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M' && m->arr[nx + 1][ny] != '%'){
-				nx++;
-				m->arr[nx][ny] = '#';
-			} else if(nx > 0 && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M' && m->arr[nx - 1][ny] != '%'){
-				nx--;
-				m->arr[nx][ny] = '#';
-			}
-		} else {
-			rand_num = rand();
-			if(rand_num % 2 == 0 && nx + 1 < WORLDX && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M' && m->arr[nx + 1][ny] != '%'){
-				nx++;
-				m->arr[nx][ny] = '#';
-			} else if(nx > 0 && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M' && m->arr[nx - 1][ny] != '%'){
-				nx--;
-				m->arr[nx][ny] = '#';
-			} else if(ny + 1 < WORLDY && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
-				ny++;
-				m->arr[nx][ny] = '#';
-			}
-		}
-		rand_num = rand();
-	}
-	return 0;
-}
-
-int connect_right(int wx, int wy, struct Map *m){
-	rand_num = rand();
-	printf("starting y: %d | starting x: %d\n", wy, wx);
-
-	//Continue until it hits a path '#' or reach the left edge
-	while(wx < WORLDX - 1 && m->arr[wx + 1][wy] != '#'){
-		if(rand_num % 2 == 0){
-			// Move right (increase x)
-			if(wx + 1 < WORLDX && m->arr[wx + 1][wy] != 'C' && m->arr[wx + 1][wy] != 'M'){
-				wx++;
-				m->arr[wx][wy] = '#';
-			} else if(wy > 0 && m->arr[wx][wy - 1] != 'C' && m->arr[wx][wy - 1] != 'M' && m->arr[wx][wy - 1] != '%'){
-				wy--;
-				m->arr[wx][wy] = '#';
-			} else if(wy + 1 < WORLDY && m->arr[wx][wy + 1] != 'C' && m->arr[wx][wy + 1] != 'M' && m->arr[wx][wy + 1] != '%'){
-				wy++;
-				m->arr[wx][wy] = '#';
-			}
-		} else {
-			rand_num = rand();
-			if(rand_num % 2 == 0 && wy + 1 < WORLDY && m->arr[wx][wy + 1] != 'C' && m->arr[wx][wy + 1] != 'M' && m->arr[wx][wy + 1] != '%'){
-				wy++;
-				m->arr[wx][wy] = '#';
-			} else if(wy > 0 && m->arr[wx][wy - 1] != 'C' && m->arr[wx][wy - 1] != 'M' && m->arr[wx][wy - 1] != '%'){
-				wy--;
-				m->arr[wx][wy] = '#';
-			} else if(wx + 1 < WORLDX && m->arr[wx + 1][wy] != 'C' && m->arr[wx + 1][wy] != 'M'){
-				wx++;
-				m->arr[wx][wy] = '#';
-			}
-		}
-		rand_num = rand();
-	}
-	return 0;
-}
-
-int connect_left(int ex, int ey, struct Map *m){
-	rand_num = rand();
-	printf("starting y: %d | starting x: %d\n", ey, ex);
-
-	//Continue until it hits a path '#' or reach the left edge
-	while(ex > 0 && m->arr[ex - 1][ey] != '#'){
-		if(rand_num % 2 == 0){
-			if(ex > 0 && m->arr[ex - 1][ey] != 'C' && m->arr[ex - 1][ey] != 'M'){
-				ex--;
-				m->arr[ex][ey] = '#';
-			} else if(ey > 0 && m->arr[ex][ey - 1] != 'C' && m->arr[ex][ey - 1] != 'M' && m->arr[ex][ey - 1] != '%'){
-				ey--;
-				m->arr[ex][ey] = '#';
-			} else if(ey + 1 < WORLDY && m->arr[ex][ey + 1] != 'C' && m->arr[ex][ey + 1] != 'M' && m->arr[ex][ey + 1] != '%'){
-				ey++;
-				m->arr[ex][ey] = '#';
-			}
-		} else {
-			rand_num = rand();
-			if(rand_num % 2 == 0 && ey + 1 < WORLDY && m->arr[ex][ey + 1] != 'C' && m->arr[ex][ey + 1] != 'M' && m->arr[ex][ey + 1] != '%'){
-				ey++;
-				m->arr[ex][ey] = '#';
-			} else if(ey > 0 && m->arr[ex][ey - 1] != 'C' && m->arr[ex][ey - 1] != 'M' && m->arr[ex][ey - 1] != '%'){
-				ey--;
-				m->arr[ex][ey] = '#';
-			} else if(ex > 0 && m->arr[ex - 1][ey] != 'C' && m->arr[ex - 1][ey] != 'M'){
-				ex--;
-				m->arr[ex][ey] = '#';
-			}
-		}
-		rand_num = rand();
-	}
-	return 0;
-}
-
-//only North and West entrances
-int connect_southeast_corner(struct Map *m){
-	if(m->entrances[North] != OutOfBounds && m->entrances[West] != OutOfBounds){
-		int nx = m->entrances[North];
-		int ny = 0;
-		int wx = 0;
-		int wy = m->entrances[West];
-
-		while(nx != wx || ny != wy){
-			rand_num = rand();
-			if(rand_num % 2 == 0){
-				if(nx > wx && nx > 0 && m->arr[nx - 1][ny] != '%' && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M'){
-					nx--;
-					m->arr[nx][ny] = '#';
-				} else if(ny < wy && ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
-					ny++;
-					m->arr[nx][ny] = '#';
-				}
-			} else {
-				if(ny < wy && ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
-					ny++;
-					m->arr[nx][ny] = '#';
-				} else if(nx > wx && nx > 0 && m->arr[nx - 1][ny] != '%' && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M'){
-					nx--;
-					m->arr[nx][ny] = '#';
-				}
-			}
-		}
-	}
-	return 0;
-}
-
-//only North and East entrances
-int connect_southwest_corner(struct Map *m){
-	if(m->entrances[North] != OutOfBounds && m->entrances[East] != OutOfBounds){
-		int nx = m->entrances[North];
-		int ny = 0;
-		int ex = WORLDX - 1;
-		int ey = m->entrances[East];
-
-		while(nx != ex || ny != ey){
-			rand_num = rand();
-			if(rand_num % 2 == 0){
-				if(nx < ex && nx + 1 < WORLDX && m->arr[nx + 1][ny] != '%' && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M'){
-					nx++;
-					m->arr[nx][ny] = '#';
-				} else if(ny < ey && ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
-					ny++;
-					m->arr[nx][ny] = '#';
-				}
-			} else {
-				if(ny < ey && ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
-					ny++;
-					m->arr[nx][ny] = '#';
-				} else if(nx < ex && nx + 1 < WORLDX && m->arr[nx + 1][ny] != '%' && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M'){
-					nx++;
-					m->arr[nx][ny] = '#';
-				}
-			}
-		}
-	}
-	return 0;
-}
-
-//only South and West entrances
-int connect_northeast_corner(struct Map *m){
-	if(m->entrances[South] != OutOfBounds && m->entrances[West] != OutOfBounds){
-		int sx = m->entrances[South];
-		int sy = WORLDY - 1;
-		int wx = 0;
-		int wy = m->entrances[West];
-
-		while(sx != wx || sy != wy){
-			rand_num = rand();
-			if(rand_num % 2 == 0){
-				if(sx > wx && sx > 0 && m->arr[sx - 1][sy] != '%' && m->arr[sx - 1][sy] != 'C' && m->arr[sx - 1][sy] != 'M'){
-					sx--;
-					m->arr[sx][sy] = '#';
-				} else if(sy > wy && sy > 0 && m->arr[sx][sy - 1] != '%' && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
-					sy--;
-					m->arr[sx][sy] = '#';
-				}
-			} else {
-				if(sy > wy && sy > 0 && m->arr[sx][sy - 1] != '%' && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
-					sy--;
-					m->arr[sx][sy] = '#';
-				} else if(sx > wx && sx > 0 && m->arr[sx - 1][sy] != '%' && m->arr[sx - 1][sy] != 'C' && m->arr[sx - 1][sy] != 'M'){
-					sx--;
-					m->arr[sx][sy] = '#';
-				}
-			}
-		}
-	}
-	return 0;
-}
-
-//only South and East entrances
-int connect_northwest_corner(struct Map *m){
-	if(m->entrances[South] != OutOfBounds && m->entrances[East] != OutOfBounds){
-		int sx = m->entrances[South];
-		int sy = WORLDY - 1;
-		int ex = WORLDX - 1;
-		int ey = m->entrances[East];
-
-		while(sx != ex || sy != ey){
-			rand_num = rand();
-			if(rand_num % 2 == 0){
-				if(sx < ex && sx + 1 < WORLDX && m->arr[sx + 1][sy] != '%' && m->arr[sx + 1][sy] != 'C' && m->arr[sx + 1][sy] != 'M'){
-					sx++;
-					m->arr[sx][sy] = '#';
-				} else if(sy > ey && sy > 0 && m->arr[sx][sy - 1] != '%' && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
-					sy--;
-					m->arr[sx][sy] = '#';
-				}
-			} else {
-				if(sy > ey && sy > 0 && m->arr[sx][sy - 1] != '%' && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
-					sy--;
-					m->arr[sx][sy] = '#';
-				} else if(sx < ex && sx + 1 < WORLDX && m->arr[sx + 1][sy] != '%' && m->arr[sx + 1][sy] != 'C' && m->arr[sx + 1][sy] != 'M'){
-					sx++;
-					m->arr[sx][sy] = '#';
-				}
-			}
-		}
-	}
-	return 0;
-}
-
-bool checkForCenter(int wx, int wy, struct Map *m){
-	if (wx + 1 < WORLDX && wy + 2 < WORLDY) {
-		if((m->arr[wx][wy + 1] != '#' && m->arr[wx][wy + 1] != '%')  && //bottom left
-					(m->arr[wx + 1][wy + 1] != '#' && m->arr[wx + 1][wy + 1] != '%') && //bottom right
-					(m->arr[wx][wy + 2] != '#' && m->arr[wx][wy + 2] != '%') && //top left
-					(m->arr[wx + 1][wy + 2] != '#' && m->arr[wx + 1][wy + 2] != '%')){ //top right
-
-				m->arr[wx][wy + 1] = 'C';
-				m->arr[wx + 1][wy + 1] = 'C';
-				m->arr[wx][wy + 2] = 'C';
-				m->arr[wx + 1][wy + 2] = 'C';
-				return true;
-			}
-	}
-	return false;
-}
-
-bool checkForMart(int nx, int ny, struct Map *m){
-	if (nx - 1 >= 0 && ny + 2 < WORLDY) {
-		if((m->arr[nx - 1][ny + 1] != '#' && m->arr[nx - 1][ny + 1] != '%')  && //bottom left
-					(m->arr[nx][ny + 1] != '#' && m->arr[nx][ny + 1] != '%') && //bottom right
-					(m->arr[nx - 1][ny + 2] != '#' && m->arr[nx - 1][ny + 2] != '%') && //top left
-					(m->arr[nx][ny + 2] != '#' && m->arr[nx][ny + 2] != '%')){ //top right
-
-				m->arr[nx - 1][ny + 1] = 'M';
-				m->arr[nx][ny + 1] = 'M';
-				m->arr[nx - 1][ny + 2] = 'M';
-				m->arr[nx][ny + 2] = 'M';
-				return true;
-			}
-	}
-	return false;
-}
+///*
+//Connects the east and west paths
+//*/
+//int connectE_W(int ex, int ey, int wx, int wy, struct Map *m){
+//	int rand_num;
+//	int count = 0;
+//	int pSpawn;
+//	bool pSpawned = false;
+//	bool spawned = false;
+//
+//	//printf("hello I make it here to connect E_W\n");
+//	while(wx != ex || wy != ey){
+//		rand_num = rand();
+//		pSpawn = rand_num % 400 + 1;
+//		if(rand_num % 2 == 0 && wx != ex){
+//			if(wx + 1 < WORLDX && m->arr[wx + 1][wy] != '%' && m->arr[wx + 1][wy] != 'C' && m->arr[wx + 1][wy] != 'M'){ //Checking to the right
+//				wx++;
+//				m->arr[wx][wy] = '#';
+//				count++;
+//			}
+//			else if(wy > 0 && m->arr[wx][wy - 1] != '%' && m->arr[wx][wy - 1] != 'C' && m->arr[wx][wy - 1] != 'M'){ //Checking to go down if blocked
+//				wy--;
+//				m->arr[wx][wy] = '#';
+//			}
+//			else if(wy + 1 < WORLDY && m->arr[wx][wy + 1] != '%' && m->arr[wx][wy + 1] != 'C' && m->arr[wx][wy + 1] != 'M'){ //Checking to go up
+//				wy++;
+//				m->arr[wx][wy] = '#';
+//			}
+//		} else {
+//			if (ey < wy && wy > 0 && m->arr[wx][wy - 1] != '%' && m->arr[wx][wy - 1] != 'C' && m->arr[wx][wy - 1] != 'M'){ //Checking to go down
+//				wy--;
+//				m->arr[wx][wy] = '#';
+//			} else if (ey > wy && wy + 1 < WORLDY && m->arr[wx][wy + 1] != '%' && m->arr[wx][wy + 1] != 'C' && m->arr[wx][wy + 1] != 'M'){ //Checking to go up if stuck
+//				wy++;
+//				m->arr[wx][wy] = '#';
+//			}
+//			else if(wx + 1 < WORLDX && m->arr[wx + 1][wy] != '%' && m->arr[wx + 1][wy] != 'C' && m->arr[wx + 1][wy] != 'M'){ //Checking to go right
+//				wx++;
+//				m->arr[wx][wy] = '#';
+//				count++;
+//			}
+//		}
+//
+//		if(count > 5 && !spawned){
+//			spawned = checkForCenter(wx, wy, m);
+//		}
+//		if(count >= pSpawn && !pSpawned){
+//			player = CreateEntity(PLAYER, wx, wy);
+//			player.prev_tile = '#'; //Spawns on a path for now
+//			m->arr[wx][wy] = player.marker;
+//			pSpawned = true;
+//			rand_num = rand();
+//		}
+//	}
+//	return 0;
+//}
+//
+///*
+//Connects the north and south paths
+//*/
+//int connectN_S(int nx, int ny, int sx, int sy, struct Map *m){
+//	bool spawned = false;
+//	int count = 0;
+//	int rand_num;
+//
+//	//printf("hello I make it to connectN_S\n");
+//	while(nx != sx || ny != sy){
+//		rand_num = rand();
+//		if(rand_num % 2 == 0 && ny != sy){
+//			if(ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
+//				ny++;
+//				m->arr[nx][ny] = '#';
+//				count++;
+//			}
+//			else if(nx > 0 && m->arr[nx - 1][ny] != '%' && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M'){
+//				nx--;
+//				m->arr[nx][ny] = '#';
+//			}
+//			else if(nx + 1 < WORLDX && m->arr[nx + 1][ny] != '%' && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M'){
+//				nx++;
+//				m->arr[nx][ny] = '#';
+//			}
+//		} else {
+//			if (nx < sx && nx + 1 < WORLDX && m->arr[nx + 1][ny] != '%' && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M'){
+//				nx++;
+//				m->arr[nx][ny] = '#';
+//			} else if (nx > sx && nx > 0 && m->arr[nx - 1][ny] != '%' && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M'){
+//				nx--;
+//				m->arr[nx][ny] = '#';
+//			}
+//			else if(ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
+//				ny++;
+//				m->arr[nx][ny] = '#';
+//				count++;
+//			}
+//		}
+//
+//		if(count > 6 && !spawned){
+//			spawned = checkForMart(nx, ny, m);
+//		}
+//	}
+//
+//	return 0;
+//}
+//
+//int connect_upwards(int sx, int sy, struct Map *m){
+//	rand_num = rand();
+//	printf("starting y: %d | starting x: %d\n", sy, sx);
+//
+//	//Continue until we hit a path '#'
+//	while(sy > 0 && m->arr[sx][sy - 1] != '#'){
+//		if(rand_num % 2 == 0){
+//			if(sy > 0 && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
+//				sy--;
+//				m->arr[sx][sy] = '#';
+//			} else if(sx + 1 < WORLDX && m->arr[sx + 1][sy] != 'C' && m->arr[sx + 1][sy] != 'M' && m->arr[sx+1][sy] != '%'){
+//				sx++;
+//				m->arr[sx][sy] = '#';
+//			} else if(sx > 0 && m->arr[sx - 1][sy] != 'C' && m->arr[sx - 1][sy] != 'M' && m->arr[sx - 1][sy] != '%'){
+//				sx--;
+//				m->arr[sx][sy] = '#';
+//			}
+//		} else {
+//			rand_num = rand();
+//			if(rand_num % 2 == 0 && sx + 1 < WORLDX && m->arr[sx + 1][sy] != 'C' && m->arr[sx + 1][sy] != 'M' && m->arr[sx - 1][sy] != '%'){
+//				sx++;
+//				m->arr[sx][sy] = '#';
+//			} else if(sx > 0 && m->arr[sx - 1][sy] != 'C' && m->arr[sx - 1][sy] != 'M' && m->arr[sx - 1][sy] != '%'){
+//				sx--;
+//				m->arr[sx][sy] = '#';
+//			} else if(sy > 0 && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
+//				sy--;
+//				m->arr[sx][sy] = '#';
+//			}
+//		}
+//		rand_num = rand();
+//	}
+//	return 0;
+//}
+//
+//int connect_down(int nx, int ny, struct Map *m){
+//	rand_num = rand();
+//	printf("starting y: %d | starting x: %d\n", ny, nx);
+//
+//	//Continue until we hit a path '#' or reach the bottom
+//	while(ny < WORLDY - 1 && m->arr[nx][ny + 1] != '#'){
+//		if(rand_num % 2 == 0){
+//			if(ny + 1 < WORLDY && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
+//				ny++;
+//				m->arr[nx][ny] = '#';
+//			} else if(nx + 1 < WORLDX && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M' && m->arr[nx + 1][ny] != '%'){
+//				nx++;
+//				m->arr[nx][ny] = '#';
+//			} else if(nx > 0 && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M' && m->arr[nx - 1][ny] != '%'){
+//				nx--;
+//				m->arr[nx][ny] = '#';
+//			}
+//		} else {
+//			rand_num = rand();
+//			if(rand_num % 2 == 0 && nx + 1 < WORLDX && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M' && m->arr[nx + 1][ny] != '%'){
+//				nx++;
+//				m->arr[nx][ny] = '#';
+//			} else if(nx > 0 && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M' && m->arr[nx - 1][ny] != '%'){
+//				nx--;
+//				m->arr[nx][ny] = '#';
+//			} else if(ny + 1 < WORLDY && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
+//				ny++;
+//				m->arr[nx][ny] = '#';
+//			}
+//		}
+//		rand_num = rand();
+//	}
+//	return 0;
+//}
+//
+//int connect_right(int wx, int wy, struct Map *m){
+//	rand_num = rand();
+//	printf("starting y: %d | starting x: %d\n", wy, wx);
+//
+//	//Continue until it hits a path '#' or reach the left edge
+//	while(wx < WORLDX - 1 && m->arr[wx + 1][wy] != '#'){
+//		if(rand_num % 2 == 0){
+//			// Move right (increase x)
+//			if(wx + 1 < WORLDX && m->arr[wx + 1][wy] != 'C' && m->arr[wx + 1][wy] != 'M'){
+//				wx++;
+//				m->arr[wx][wy] = '#';
+//			} else if(wy > 0 && m->arr[wx][wy - 1] != 'C' && m->arr[wx][wy - 1] != 'M' && m->arr[wx][wy - 1] != '%'){
+//				wy--;
+//				m->arr[wx][wy] = '#';
+//			} else if(wy + 1 < WORLDY && m->arr[wx][wy + 1] != 'C' && m->arr[wx][wy + 1] != 'M' && m->arr[wx][wy + 1] != '%'){
+//				wy++;
+//				m->arr[wx][wy] = '#';
+//			}
+//		} else {
+//			rand_num = rand();
+//			if(rand_num % 2 == 0 && wy + 1 < WORLDY && m->arr[wx][wy + 1] != 'C' && m->arr[wx][wy + 1] != 'M' && m->arr[wx][wy + 1] != '%'){
+//				wy++;
+//				m->arr[wx][wy] = '#';
+//			} else if(wy > 0 && m->arr[wx][wy - 1] != 'C' && m->arr[wx][wy - 1] != 'M' && m->arr[wx][wy - 1] != '%'){
+//				wy--;
+//				m->arr[wx][wy] = '#';
+//			} else if(wx + 1 < WORLDX && m->arr[wx + 1][wy] != 'C' && m->arr[wx + 1][wy] != 'M'){
+//				wx++;
+//				m->arr[wx][wy] = '#';
+//			}
+//		}
+//		rand_num = rand();
+//	}
+//	return 0;
+//}
+//
+//int connect_left(int ex, int ey, struct Map *m){
+//	rand_num = rand();
+//	printf("starting y: %d | starting x: %d\n", ey, ex);
+//
+//	//Continue until it hits a path '#' or reach the left edge
+//	while(ex > 0 && m->arr[ex - 1][ey] != '#'){
+//		if(rand_num % 2 == 0){
+//			if(ex > 0 && m->arr[ex - 1][ey] != 'C' && m->arr[ex - 1][ey] != 'M'){
+//				ex--;
+//				m->arr[ex][ey] = '#';
+//			} else if(ey > 0 && m->arr[ex][ey - 1] != 'C' && m->arr[ex][ey - 1] != 'M' && m->arr[ex][ey - 1] != '%'){
+//				ey--;
+//				m->arr[ex][ey] = '#';
+//			} else if(ey + 1 < WORLDY && m->arr[ex][ey + 1] != 'C' && m->arr[ex][ey + 1] != 'M' && m->arr[ex][ey + 1] != '%'){
+//				ey++;
+//				m->arr[ex][ey] = '#';
+//			}
+//		} else {
+//			rand_num = rand();
+//			if(rand_num % 2 == 0 && ey + 1 < WORLDY && m->arr[ex][ey + 1] != 'C' && m->arr[ex][ey + 1] != 'M' && m->arr[ex][ey + 1] != '%'){
+//				ey++;
+//				m->arr[ex][ey] = '#';
+//			} else if(ey > 0 && m->arr[ex][ey - 1] != 'C' && m->arr[ex][ey - 1] != 'M' && m->arr[ex][ey - 1] != '%'){
+//				ey--;
+//				m->arr[ex][ey] = '#';
+//			} else if(ex > 0 && m->arr[ex - 1][ey] != 'C' && m->arr[ex - 1][ey] != 'M'){
+//				ex--;
+//				m->arr[ex][ey] = '#';
+//			}
+//		}
+//		rand_num = rand();
+//	}
+//	return 0;
+//}
+//
+////only North and West entrances
+//int connect_southeast_corner(struct Map *m){
+//	if(m->entrances[North] != OutOfBounds && m->entrances[West] != OutOfBounds){
+//		int nx = m->entrances[North];
+//		int ny = 0;
+//		int wx = 0;
+//		int wy = m->entrances[West];
+//
+//		while(nx != wx || ny != wy){
+//			rand_num = rand();
+//			if(rand_num % 2 == 0){
+//				if(nx > wx && nx > 0 && m->arr[nx - 1][ny] != '%' && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M'){
+//					nx--;
+//					m->arr[nx][ny] = '#';
+//				} else if(ny < wy && ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
+//					ny++;
+//					m->arr[nx][ny] = '#';
+//				}
+//			} else {
+//				if(ny < wy && ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
+//					ny++;
+//					m->arr[nx][ny] = '#';
+//				} else if(nx > wx && nx > 0 && m->arr[nx - 1][ny] != '%' && m->arr[nx - 1][ny] != 'C' && m->arr[nx - 1][ny] != 'M'){
+//					nx--;
+//					m->arr[nx][ny] = '#';
+//				}
+//			}
+//		}
+//	}
+//	return 0;
+//}
+//
+////only North and East entrances
+//int connect_southwest_corner(struct Map *m){
+//	if(m->entrances[North] != OutOfBounds && m->entrances[East] != OutOfBounds){
+//		int nx = m->entrances[North];
+//		int ny = 0;
+//		int ex = WORLDX - 1;
+//		int ey = m->entrances[East];
+//
+//		while(nx != ex || ny != ey){
+//			rand_num = rand();
+//			if(rand_num % 2 == 0){
+//				if(nx < ex && nx + 1 < WORLDX && m->arr[nx + 1][ny] != '%' && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M'){
+//					nx++;
+//					m->arr[nx][ny] = '#';
+//				} else if(ny < ey && ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
+//					ny++;
+//					m->arr[nx][ny] = '#';
+//				}
+//			} else {
+//				if(ny < ey && ny + 1 < WORLDY && m->arr[nx][ny + 1] != '%' && m->arr[nx][ny + 1] != 'C' && m->arr[nx][ny + 1] != 'M'){
+//					ny++;
+//					m->arr[nx][ny] = '#';
+//				} else if(nx < ex && nx + 1 < WORLDX && m->arr[nx + 1][ny] != '%' && m->arr[nx + 1][ny] != 'C' && m->arr[nx + 1][ny] != 'M'){
+//					nx++;
+//					m->arr[nx][ny] = '#';
+//				}
+//			}
+//		}
+//	}
+//	return 0;
+//}
+//
+////only South and West entrances
+//int connect_northeast_corner(struct Map *m){
+//	if(m->entrances[South] != OutOfBounds && m->entrances[West] != OutOfBounds){
+//		int sx = m->entrances[South];
+//		int sy = WORLDY - 1;
+//		int wx = 0;
+//		int wy = m->entrances[West];
+//
+//		while(sx != wx || sy != wy){
+//			rand_num = rand();
+//			if(rand_num % 2 == 0){
+//				if(sx > wx && sx > 0 && m->arr[sx - 1][sy] != '%' && m->arr[sx - 1][sy] != 'C' && m->arr[sx - 1][sy] != 'M'){
+//					sx--;
+//					m->arr[sx][sy] = '#';
+//				} else if(sy > wy && sy > 0 && m->arr[sx][sy - 1] != '%' && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
+//					sy--;
+//					m->arr[sx][sy] = '#';
+//				}
+//			} else {
+//				if(sy > wy && sy > 0 && m->arr[sx][sy - 1] != '%' && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
+//					sy--;
+//					m->arr[sx][sy] = '#';
+//				} else if(sx > wx && sx > 0 && m->arr[sx - 1][sy] != '%' && m->arr[sx - 1][sy] != 'C' && m->arr[sx - 1][sy] != 'M'){
+//					sx--;
+//					m->arr[sx][sy] = '#';
+//				}
+//			}
+//		}
+//	}
+//	return 0;
+//}
+//
+////only South and East entrances
+//int connect_northwest_corner(struct Map *m){
+//	if(m->entrances[South] != OutOfBounds && m->entrances[East] != OutOfBounds){
+//		int sx = m->entrances[South];
+//		int sy = WORLDY - 1;
+//		int ex = WORLDX - 1;
+//		int ey = m->entrances[East];
+//
+//		while(sx != ex || sy != ey){
+//			rand_num = rand();
+//			if(rand_num % 2 == 0){
+//				if(sx < ex && sx + 1 < WORLDX && m->arr[sx + 1][sy] != '%' && m->arr[sx + 1][sy] != 'C' && m->arr[sx + 1][sy] != 'M'){
+//					sx++;
+//					m->arr[sx][sy] = '#';
+//				} else if(sy > ey && sy > 0 && m->arr[sx][sy - 1] != '%' && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
+//					sy--;
+//					m->arr[sx][sy] = '#';
+//				}
+//			} else {
+//				if(sy > ey && sy > 0 && m->arr[sx][sy - 1] != '%' && m->arr[sx][sy - 1] != 'C' && m->arr[sx][sy - 1] != 'M'){
+//					sy--;
+//					m->arr[sx][sy] = '#';
+//				} else if(sx < ex && sx + 1 < WORLDX && m->arr[sx + 1][sy] != '%' && m->arr[sx + 1][sy] != 'C' && m->arr[sx + 1][sy] != 'M'){
+//					sx++;
+//					m->arr[sx][sy] = '#';
+//				}
+//			}
+//		}
+//	}
+//	return 0;
+//}
+//
+//bool checkForCenter(int wx, int wy, struct Map *m){
+//	if (wx + 1 < WORLDX && wy + 2 < WORLDY) {
+//		if((m->arr[wx][wy + 1] != '#' && m->arr[wx][wy + 1] != '%')  && //bottom left
+//					(m->arr[wx + 1][wy + 1] != '#' && m->arr[wx + 1][wy + 1] != '%') && //bottom right
+//					(m->arr[wx][wy + 2] != '#' && m->arr[wx][wy + 2] != '%') && //top left
+//					(m->arr[wx + 1][wy + 2] != '#' && m->arr[wx + 1][wy + 2] != '%')){ //top right
+//
+//				m->arr[wx][wy + 1] = 'C';
+//				m->arr[wx + 1][wy + 1] = 'C';
+//				m->arr[wx][wy + 2] = 'C';
+//				m->arr[wx + 1][wy + 2] = 'C';
+//				return true;
+//			}
+//	}
+//	return false;
+//}
+//
+//bool checkForMart(int nx, int ny, struct Map *m){
+//	if (nx - 1 >= 0 && ny + 2 < WORLDY) {
+//		if((m->arr[nx - 1][ny + 1] != '#' && m->arr[nx - 1][ny + 1] != '%')  && //bottom left
+//					(m->arr[nx][ny + 1] != '#' && m->arr[nx][ny + 1] != '%') && //bottom right
+//					(m->arr[nx - 1][ny + 2] != '#' && m->arr[nx - 1][ny + 2] != '%') && //top left
+//					(m->arr[nx][ny + 2] != '#' && m->arr[nx][ny + 2] != '%')){ //top right
+//
+//				m->arr[nx - 1][ny + 1] = 'M';
+//				m->arr[nx][ny + 1] = 'M';
+//				m->arr[nx - 1][ny + 2] = 'M';
+//				m->arr[nx][ny + 2] = 'M';
+//				return true;
+//			}
+//	}
+//	return false;
+//}
 
 bool canGrow(struct queue_item p, struct Map *m){
 
