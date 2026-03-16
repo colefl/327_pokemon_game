@@ -44,7 +44,7 @@ struct point{
 	//bool hasGone;
 	//bool growing;
 	//struct point *next;
-} g1, g2, tg1, tg2, w; //Got from Brian W Kernighan and Dennis M. Ritchie's book
+}; //Got from Brian W Kernighan and Dennis M. Ritchie's book
 
 typedef struct {
     int x;

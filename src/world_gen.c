@@ -95,6 +95,7 @@ entity player;
 heap_t eq;
 int hiker_dist[80][21];
 int rival_dist[80][21];
+struct point g1, g2, tg1, tg2, w;
 //int x, y;
 //struct Map m;
 //int north_p, south_p, east_p, west_p;
