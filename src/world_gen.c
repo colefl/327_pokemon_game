@@ -143,6 +143,12 @@ void runGameLoop(heap_t *eq, struct Map *m) {
 
     while (1) {
         event = dequeue_next(eq);
+
+        //Okay so here's the general idea: I need to have a mvgetch that will be able to receive the various movements. I likely need to relook at the windows and such for curses because this is super weird so far but overall this feels doable.
+        //Notably: The game pauses and waits for our input now!
+        //The top line needs to be used for displaying messages
+        //pressing t will display the list of all entities not including the trainer, if there isn't enough space, then there needs to be scrolling capabilities.
+        //Need to add a quit_game bool for ending the game
         if (!event) break;
 
         current_time = event->next_move;
