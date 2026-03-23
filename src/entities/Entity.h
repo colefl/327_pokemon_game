@@ -37,6 +37,7 @@ typedef struct {
 	bool isSpawned;
 	char prev_tile;
 	int direction;
+	bool isDefeated;
 } entity;
 
 int copyArrs(int arr1[NUM_OF_TILES], int arr2[NUM_OF_TILES]);

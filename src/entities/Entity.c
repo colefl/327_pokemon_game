@@ -31,17 +31,18 @@ enum entity_readbility{
 	NUM_OF_TILES = 10
 };
 
-typedef struct {
-	int x;
-	int y;
-	char marker;
-	int id;
-	char spawnsOn[4];
-	int weights[8];
-	bool isSpawned;
-	char prev_tile;
-	int direction;
-} entity;
+//typedef struct {
+//	int x;
+//	int y;
+//	char marker;
+//	int id;
+//	char spawnsOn[4];
+//	int weights[8];
+//	bool isSpawned;
+//	char prev_tile;
+//	int direction;
+//	bool isDefeated;
+//} entity;
 
 
 int copyArrs(int arr1[NUM_OF_TILES], int arr2[NUM_OF_TILES]);
@@ -68,6 +69,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = false;
+		tmp->isDefeated = false;
 		break;
 
 	case HIKER:
@@ -79,6 +81,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = false;
+		tmp->isDefeated = false;
 		//printf("x: %d, y: %d\n", x, y);
 		break;
 
@@ -90,6 +93,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->x= x;
 		tmp->y = y;
 		tmp->isSpawned = false;
+		tmp->isDefeated = false;
 		break;
 
 	case PACER:
@@ -102,6 +106,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = false;
+		tmp->isDefeated = false;
 		break;
 
 	case WANDERER:
@@ -113,6 +118,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = false;
+		tmp->isDefeated = false;
 		break;
 
 	case SENTRY:
@@ -124,6 +130,7 @@ entity CreateEntity(int id, int x, int y){
 		tmp->x = x;
 		tmp->y = y;
 		tmp->isSpawned = false;
+		tmp->isDefeated = false;
 		break;
 
 	case EXPLORERS:
@@ -136,6 +143,7 @@ entity CreateEntity(int id, int x, int y){
 			tmp->x = x;
 			tmp->y = y;
 			tmp->isSpawned = false;
+			tmp->isDefeated = false;
 			break;
 	}
 

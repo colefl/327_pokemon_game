@@ -10,6 +10,7 @@
 #include <time.h>
 #include <ncurses.h>
 #include <unistd.h>
+#include <string.h>
 #include "heap.h"
 //#include "stack.c"
 #include "point_queue.c"
@@ -64,6 +65,7 @@ int print_board(struct Map *m);
 int print_costs(int arr[80][21], entity *player);
 int paint_board(struct Map *m);
 int run_battle_sequence();
+int start_battle_state(struct Map *m);
 
 //Variables
 
@@ -180,6 +182,7 @@ void runGameLoop(heap_t *eq, struct Map *m) {
 				case 'k': //Moving upwards
 					if(is_occupied(player->x, player->y - 1, m, player)){
 						run_battle_sequence();
+						start_battle_state(m); //Yas
 					}
 					if(is_border(player->x, player->y, m)) break;
 					m->arr[player->x][player->y] = player->prev_tile;
@@ -243,6 +246,35 @@ void runGameLoop(heap_t *eq, struct Map *m) {
     endwin();
 }
 
+int start_battle_state(Map *m){ //Input the player and the npc in question. UPDATE ENTITY TO INCLUDE IS_DEFEATED
+	int i,j;
+		for(i = 0; i < WORLDX; i++){
+			for(j = 0; j < WORLDY; j++){
+				mvaddch(j,i, ' ');
+				usleep(1000); //just a cool little thingy for now
+			}
+			refresh();
+		}
+	bool in_battle = true;
+	char battle_debug_screen[] = "Press q to exit battle";
+	int k;
+	for(k = 0; k < strlen(battle_debug_screen); k++){
+		mvaddch(13, k + (WORLDX /2), battle_debug_screen[k]);
+		usleep(1000);
+	}
+	while(in_battle){
+		char key = 'h';
+		key = getch();
+		switch(key){
+		case 'q':
+			in_battle = false;
+			break;
+		}
+	}
+	paint_board(m);
+	return 0;
+}
+
 static int is_border(int x, int y, struct Map *m)
 {
     /* Map edges are always border */
@@ -253,7 +285,7 @@ static int is_border(int x, int y, struct Map *m)
     return 0;
 }
 
-static int is_occupied(int x, int y, struct Map *m, entity *self)
+static int is_occupied(int x, int y, struct Map *m, entity *self) //Need this to return an entity, shouldn't break anything since if statements only care whether things are 0 or not
 {
     char tile = m->arr[x][y];
     /* Player and NPC markers count as occupied */
@@ -291,6 +323,7 @@ int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m) {
 //        }
         if(m->arr[new_x][new_y] == '@'){
         	run_battle_sequence();
+        	start_battle_state(m);
         	return getTerrainCost(m->arr[npc->x][npc->y], npc);
         }
         if(is_occupied(new_x, new_y, m, npc)) continue;
