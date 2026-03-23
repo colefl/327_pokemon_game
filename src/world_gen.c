@@ -63,13 +63,14 @@ static int is_occupied(int x, int y, struct Map *m, entity *self);
 int print_board(struct Map *m);
 int print_costs(int arr[80][21], entity *player);
 int paint_board(struct Map *m);
+int run_battle_sequence();
 
 //Variables
 
 int rand_num;
 int count;
 
-entity player;
+entity *player;
 heap_t eq; //Entity queue
 
 int hiker_dist[80][21];
@@ -86,6 +87,7 @@ int init_map(struct Map *m){
             m->visited[i][j] = false;
         }
     }
+    //printf("Hello I think I know what the issue is\n");
 
 	srand(time(NULL));
 
@@ -111,24 +113,29 @@ int init_map(struct Map *m){
 
 	init_world_edge(m);
 
+	player = malloc(sizeof (entity)); //Need to free
+
+	printf("I make it past init_world_edge\n");
 	pathMaker pm = makePathMaker(m, player);
 	makePaths(&pm); //This may break when used along other maps...
 	m = pm.map;
-	player = pm.player;
+	printf("Hello I make it to makePaths\n");
+	player = &(pm.player);
+	printf("Hello the error is here lol\n");
 
 	int num_of_npcs;
 	num_of_npcs = rand() % 4 + 9;
 
 	spawnEntities(&eq, num_of_npcs,  m);
 
-	//printf("hello I make it here to spawnEntities");
+	printf("hello I make it here to spawnEntities");
 
 	entity hiker_template = CreateEntity(HIKER, 0, 0);
 	entity rival_template = CreateEntity(RIVAL, 0, 0);
-	dijkstrasAlgo(m, &player, &hiker_template, hiker_dist);
-	dijkstrasAlgo(m, &player, &rival_template, rival_dist);
+	dijkstrasAlgo(m, player, &hiker_template, hiker_dist);
+	dijkstrasAlgo(m, player, &rival_template, rival_dist);
 
-	enqueue_entity(&eq, &player, 0);
+	enqueue_entity(&eq, player, 0);
 
 	runGameLoop(&eq, m);
 
@@ -139,9 +146,18 @@ void runGameLoop(heap_t *eq, struct Map *m) {
 
     int current_time = 0;
     entity_move *event;
+    bool quit_game = false;
+    char key = 'k';
     initscr();
+    raw();
+    noecho();
+    keypad(stdscr, TRUE);
 
-    while (1) {
+    //Idea for tomorrow: have a battle sequence boolean or int or something and that way if there's a battle sequence going on we can switch from the game state
+    //ADD A GAME STATE INTEGER AND A THINGY UP TOP AN ENUM OH YEA
+    //ALSO add a boolean for defeated into the entity class
+
+    while (!quit_game) {
         event = dequeue_next(eq);
 
         //Okay so here's the general idea: I need to have a mvgetch that will be able to receive the various movements. I likely need to relook at the windows and such for curses because this is super weird so far but overall this feels doable.
@@ -158,13 +174,39 @@ void runGameLoop(heap_t *eq, struct Map *m) {
         switch (event->npc->id) {
 
         case PLAYER: {
+        	//REMEMEBER TO PUT IN HELPER FUNCTION FOR READIBILITY
+        	key = getch();
+        	switch(key){
+				case 'k': //Moving upwards
+					if(is_occupied(player->x, player->y - 1, m, player)){
+						run_battle_sequence();
+					}
+					if(is_border(player->x, player->y, m)) break;
+					m->arr[player->x][player->y] = player->prev_tile;
+					player->prev_tile = m->arr[player->x][player->y - 1];
+					player->x = player->x + 0;
+					player->y = player->y - 1;
+					m->arr[player->x][player->y] = player->marker;
+					break;
+
+				case '.':
+					break;
+
+        		case 'q':
+        	        quit_game = true;
+        	        //free(player);
+        	        break;
+
+        		default:
+        			break;
+        	}
         	//printf("Player pos: x=%d y=%d\n", player.x, player.y);
         	entity hiker_template = CreateEntity(HIKER, 0, 0);
         	entity rival_template = CreateEntity(RIVAL, 0, 0);
-        	dijkstrasAlgo(m, &player, &hiker_template, hiker_dist);
-        	dijkstrasAlgo(m, &player, &rival_template, rival_dist);
+        	dijkstrasAlgo(m, player, &hiker_template, hiker_dist); //POSSIBLE UNCAUGHT ERROR SINCE SWITCHING TO
+        	dijkstrasAlgo(m, player, &rival_template, rival_dist);
             paint_board(m);
-            usleep(500000);
+            //usleep(500000);
             terrain_cost = 10;
             break;
         }
@@ -206,6 +248,8 @@ static int is_border(int x, int y, struct Map *m)
     /* Map edges are always border */
     if (x <= 0 || x >= 79 || y <= 0 || y >= 20) return 1;
     if (m->arr[x][y] == '%') return 1;
+    if(m->arr[x][y] == '^') return 1;
+    if(m->arr[x][y] == '~') return 1;
     return 0;
 }
 
@@ -213,7 +257,7 @@ static int is_occupied(int x, int y, struct Map *m, entity *self)
 {
     char tile = m->arr[x][y];
     /* Player and NPC markers count as occupied */
-    if (tile == '@') return 1;
+    if (tile == '@') return 2;
     if (tile == 'h') return 1;
     if (tile == 'r') return 1;
     if (tile == 'p') return 1;
@@ -223,20 +267,33 @@ static int is_occupied(int x, int y, struct Map *m, entity *self)
     return 0;
 }
 
+//static int getPlayerMovement(){ //Eventually I will put all of that logic into this helper function
+//
+//}
+
 int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m) {
     int dx[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
     int dy[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
 
     int best_x = npc->x;
     int best_y = npc->y;
-    int bestCost = INT_MAX;   /* fixed -- was dist[npc->x][npc->y] */
+    int bestCost = INT_MAX;
 
     int i;
     for (i = 0; i < 8; i++) {
         int new_x = npc->x + dx[i];
         int new_y = npc->y + dy[i];
 
-        if (is_occupied(new_x, new_y, m, npc)) continue;
+//        if (is_occupied(new_x, new_y, m, npc) == 1 || is_occupied(new_x, new_y, m, npc) == 0){
+//        	continue;
+//        } else if(is_occupied(new_x, new_y, m, npc) == 2){
+//        	run_battle_sequence();
+//        }
+        if(m->arr[new_x][new_y] == '@'){
+        	run_battle_sequence();
+        	return getTerrainCost(m->arr[npc->x][npc->y], npc);
+        }
+        if(is_occupied(new_x, new_y, m, npc)) continue;
         if (is_border(new_x, new_y, m)) continue;
         if (dist[new_x][new_y] == INT_MAX) continue;
 
@@ -247,12 +304,10 @@ int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m) {
         }
     }
 
-    /* Check BEFORE updating position */
     if (best_x == npc->x && best_y == npc->y) {
         return getTerrainCost(m->arr[npc->x][npc->y], npc);
     }
 
-    /* Now safe to update */
     m->arr[npc->x][npc->y] = npc->prev_tile;
     npc->prev_tile          = m->arr[best_x][best_y];
     npc->x = best_x;
@@ -271,7 +326,7 @@ int handle_wanderer_movement(entity *npc, struct Map *m) {
     int nx = npc->x + dx[npc->direction];
     int ny = npc->y + dy[npc->direction];
 
-    /* Try current direction first */
+    //try current direction first
     if (nx >= 0 && nx < 80 && ny >= 0 && ny < 21
         && !is_border(nx, ny, m)
         && !is_occupied(nx, ny, m, npc)
@@ -284,10 +339,9 @@ int handle_wanderer_movement(entity *npc, struct Map *m) {
         return getTerrainCost(npc->prev_tile, npc);
     }
 
-    /* Current direction blocked -- try all other directions */
     int i;
     for (i = 0; i < 8; i++) {
-        if (i == npc->direction) continue;  /* already tried this one */
+        if (i == npc->direction) continue;
 
         nx = npc->x + dx[i];
         ny = npc->y + dy[i];
@@ -297,7 +351,7 @@ int handle_wanderer_movement(entity *npc, struct Map *m) {
             && !is_occupied(nx, ny, m, npc)
             && m->arr[nx][ny] == home_terrain) {
 
-            npc->direction = i;   /* update to new direction */
+            npc->direction = i; //new dir
             m->arr[npc->x][npc->y] = npc->prev_tile;
             npc->x = nx;
             npc->y = ny;
@@ -306,7 +360,6 @@ int handle_wanderer_movement(entity *npc, struct Map *m) {
         }
     }
 
-    /* Completely surrounded -- stay put */
     return getTerrainCost(m->arr[npc->x][npc->y], npc);
 }
 
@@ -329,32 +382,25 @@ int handle_pacer_movement(entity *npc, struct Map *m)
         int nx  = npc->x + dx[dir];
         int ny  = npc->y + dy[dir];
 
-        /* Bounds check */
         if (nx < 0 || nx >= 80 || ny < 0 || ny >= 21) continue;
 
-        /* No border tiles */
         if (is_border(nx, ny, m)) continue;
 
-        /* No occupied tiles */
         if (is_occupied(nx, ny, m, npc)) continue;
 
-        /* Pacers stay on their starting terrain type only */
         if (m->arr[nx][ny] != start_terrain) continue;
 
-        /* Valid move -- update direction if we had to reverse */
+        /*update direction if we had to reverse */
         npc->direction = dir;
 
-        /* Move */
-        m->arr[npc->x][npc->y] = npc->prev_tile;   /* restore what was under us */
+        m->arr[npc->x][npc->y] = npc->prev_tile;
         npc->x = nx;
         npc->y = ny;
-        /* prev_tile stays the same -- pacer/wanderer always moves on the same terrain */
         m->arr[npc->x][npc->y] = npc->marker;
 
         return getTerrainCost(npc->prev_tile, npc);
     }
 
-    /* Completely blocked -- stay put */
     return getTerrainCost(m->arr[npc->x][npc->y], npc);
 }
 
@@ -365,7 +411,6 @@ int handle_explorer_movement(entity *npc, struct Map *m) {
     int nx = npc->x + dx[npc->direction];
     int ny = npc->y + dy[npc->direction];
 
-    /* Try current direction first -- any passable tile is fine */
     if (nx >= 0 && nx < 80 && ny >= 0 && ny < 21
         && !is_border(nx, ny, m)
         && !is_occupied(nx, ny, m, npc)
@@ -379,7 +424,6 @@ int handle_explorer_movement(entity *npc, struct Map *m) {
         return getTerrainCost(npc->prev_tile, npc);
     }
 
-    /* Current direction blocked -- try all others */
     int i;
     for (i = 0; i < 8; i++) {
         if (i == npc->direction) continue;
@@ -402,7 +446,6 @@ int handle_explorer_movement(entity *npc, struct Map *m) {
         }
     }
 
-    /* Completely surrounded by impassable tiles -- stay put */
     return getTerrainCost(m->arr[npc->x][npc->y], npc);
 }
 
@@ -765,6 +808,18 @@ int paint_board(struct Map *m){
 		}
 	}
 	refresh();
+	return 0;
+}
+
+int run_battle_sequence(){
+	int i,j;
+	for(i = 0; i < WORLDX; i++){
+		for(j = 0; j < WORLDY; j++){
+			mvaddch(j,i, '/');
+			usleep(1000); //just a cool little thingy for now
+		}
+		refresh();
+	}
 	return 0;
 }
 

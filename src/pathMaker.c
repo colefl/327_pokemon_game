@@ -11,7 +11,7 @@
 
 pathMaker makePaths(pathMaker *pm);
 
-pathMaker makePathMaker(Map *m, entity player);
+pathMaker makePathMaker(Map *m, entity *player);
 
 int connectE_W(int ex, int ey, int wx, int wy, pathMaker *pm);
 int connectN_S(int nx, int ny, int sx, int sy, pathMaker *pm);
@@ -79,11 +79,11 @@ pathMaker makePaths(pathMaker *pm){
 	return *pm;
 }
 
-pathMaker makePathMaker(Map *m, entity player){
+pathMaker makePathMaker(Map *m, entity *player){
 	pathMaker tmp;
 
 	tmp.map = m;
-	tmp.player = player;
+	tmp.player = *player;
 
 	return tmp;
 }
