@@ -31,24 +31,24 @@ enum entity_readbility{
 	NUM_OF_TILES = 10
 };
 
-//typedef struct {
-//	int x;
-//	int y;
-//	char marker;
-//	int id;
-//	char spawnsOn[4];
-//	int weights[8];
-//	bool isSpawned;
-//	char prev_tile;
-//	int direction;
-//	bool isDefeated;
-//} entity;
+typedef struct {
+	int x;
+	int y;
+	char marker;
+	int id;
+	char spawnsOn[4];
+	int weights[8];
+	bool isSpawned;
+	char prev_tile;
+	int direction;
+	bool isDefeated;
+} entity;
 
 
 int copyArrs(int arr1[NUM_OF_TILES], int arr2[NUM_OF_TILES]);
 int printArr(int arr[NUM_OF_TILES]);
 
-entity CreateEntity(int id, int x, int y){
+entity* CreateEntity(int id, int x, int y){
 
 	//Weights go Bldr, Tree, Path, Pmart, Pcenter, TGras, SGras, Water, Gate, Other NPCS
 	int player_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, 10, 10, 20, 10, 10, INT_MAX, 10, INT_MAX};
@@ -57,7 +57,7 @@ entity CreateEntity(int id, int x, int y){
 	int default_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX, INT_MAX, 10, 10, INT_MAX, INT_MAX, INT_MAX};
 	entity *tmp;
 	if(!(tmp = malloc(sizeof (*tmp)))){ //MAKE SURE WE FREE THIS DATA TYPE
-		return *tmp;
+		return tmp;
 	}
 	switch (id){
 	case PLAYER:
@@ -147,10 +147,8 @@ entity CreateEntity(int id, int x, int y){
 			break;
 	}
 
-	entity result = *tmp; //I have no idea why I did this I think it was supposed to be a temporary fix.
-	free(tmp);
 	//printf("Hello I make it here\n");
-	return result;
+	return tmp;
 }
 
 int deleteEntity(entity *npc){

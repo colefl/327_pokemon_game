@@ -70,14 +70,14 @@ bool canGrow(struct queue_item p, Map *m);
 int pepperInTrees(Map *m);
 
 //SPAWNING ENTITIES
-int spawnEntities(heap_t *eq, int id, Map *m);
+int spawnEntities(heap_t *eq, entity* entities[], int rand_num, struct Map *m);
 int spawnEntity(entity *npc, int id, Map *m);
 int32_t cell_compare(const void *key, const void *with);
 int dijkstrasAlgo(Map *m, entity *player, entity *npc, int dist[80][21]);
 int check_if_spawns_on(char tile, char spawnables[4]);
 
 //GAMELOOP
-void runGameLoop(heap_t *eq, Map *m);
+void runGameLoop(heap_t *eq, entity* entities[], Map *m);
 int handle_npc_movement(entity *npc, int dist[80][21] , Map *m);
 int handle_wanderer_movement(entity *npc, Map *m);
 int handle_pacer_movement(entity *npc, Map *m);

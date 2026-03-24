@@ -35,7 +35,7 @@ void enqueue_entity(heap_t *pq, entity *ent, int time)
 {
     entity_move *ev = malloc(sizeof(entity_move));
     if (!ev) {
-    	printf("This isn't working in the enqueue");
+    	printf("This isn't working in the enqueue\n");
     	return;
     }
 

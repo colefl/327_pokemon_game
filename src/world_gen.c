@@ -44,7 +44,7 @@ bool canGrow(struct queue_item p, struct Map *m);
 int pepperInTrees(struct Map *m);
 
 //SPAWNING ENTITIES
-int spawnEntities(heap_t *eq, int id, struct Map *m);
+int spawnEntities(heap_t *eq, entity* entities[], int rand_num, struct Map *m);
 int spawnEntity(entity *npc, int id, struct Map *m);
 int32_t cell_compare(const void *key, const void *with);
 int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]);
@@ -52,7 +52,7 @@ static int getTerrainCost(char tile, entity *npc);
 int check_if_spawns_on(char tile, char spawnables[4]);
 
 //GAMELOOP
-void runGameLoop(heap_t *eq, struct Map *m);
+void runGameLoop(heap_t *eq, entity* entities[], struct Map *m);
 int handle_npc_movement(entity *npc, int dist[80][21] , struct Map *m);
 int handle_wanderer_movement(entity *npc, struct Map *m);
 int handle_pacer_movement(entity *npc, struct Map *m);
@@ -65,7 +65,8 @@ int print_board(struct Map *m);
 int print_costs(int arr[80][21], entity *player);
 int paint_board(struct Map *m);
 int run_battle_sequence();
-int start_battle_state(struct Map *m);
+int start_battle_state(struct Map *m, entity *npc);
+static entity* player_entity_collision(entity* entities[], entity *player);
 
 //Variables
 
@@ -123,14 +124,18 @@ int init_map(struct Map *m){
 	m = pm.map;
 	printf("Hello I make it to makePaths\n");
 	player = &(pm.player);
-	printf("Hello the error is here lol\n");
+	//printf("Hello the error is here lol\n");
 
 	int num_of_npcs;
 	num_of_npcs = rand() % 4 + 9;
 
-	spawnEntities(&eq, num_of_npcs,  m);
+	entity* entities[num_of_npcs];
 
-	printf("hello I make it here to spawnEntities");
+	printf("hello I make it before spawnEntities\n");
+
+	spawnEntities(&eq, entities, num_of_npcs,  m);
+
+	printf("hello I make it here to spawnEntities\n");
 
 	entity hiker_template = CreateEntity(HIKER, 0, 0);
 	entity rival_template = CreateEntity(RIVAL, 0, 0);
@@ -139,12 +144,12 @@ int init_map(struct Map *m){
 
 	enqueue_entity(&eq, player, 0);
 
-	runGameLoop(&eq, m);
+	runGameLoop(&eq, entities, m);
 
 	return 0;
 }
 
-void runGameLoop(heap_t *eq, struct Map *m) {
+void runGameLoop(heap_t *eq, entity* entities[], struct Map *m) {
 
     int current_time = 0;
     entity_move *event;
@@ -154,6 +159,8 @@ void runGameLoop(heap_t *eq, struct Map *m) {
     raw();
     noecho();
     keypad(stdscr, TRUE);
+
+    printf("hello I make it inside the game loop\n");
 
     //Idea for tomorrow: have a battle sequence boolean or int or something and that way if there's a battle sequence going on we can switch from the game state
     //ADD A GAME STATE INTEGER AND A THINGY UP TOP AN ENUM OH YEA
@@ -173,6 +180,8 @@ void runGameLoop(heap_t *eq, struct Map *m) {
 
         int terrain_cost = 10;
 
+        entity *tmp;
+
         switch (event->npc->id) {
 
         case PLAYER: {
@@ -181,8 +190,11 @@ void runGameLoop(heap_t *eq, struct Map *m) {
         	switch(key){
 				case 'k': //Moving upwards
 					if(is_occupied(player->x, player->y - 1, m, player)){
-						run_battle_sequence();
-						start_battle_state(m); //Yas
+						tmp = player_entity_collision(entities, player); //Need to finish logic
+						if(tmp->isDefeated != true){
+							run_battle_sequence();
+							start_battle_state(m, tmp); //Yas Okay I'm starting to get confused because now wouldn't I need to input the entities arr into start_battle_state??
+						}
 					}
 					if(is_border(player->x, player->y, m)) break;
 					m->arr[player->x][player->y] = player->prev_tile;
@@ -246,7 +258,7 @@ void runGameLoop(heap_t *eq, struct Map *m) {
     endwin();
 }
 
-int start_battle_state(Map *m){ //Input the player and the npc in question. UPDATE ENTITY TO INCLUDE IS_DEFEATED
+int start_battle_state(Map *m, entity *npc){ //Input the player and the npc in question. UPDATE ENTITY TO INCLUDE IS_DEFEATED
 	int i,j;
 		for(i = 0; i < WORLDX; i++){
 			for(j = 0; j < WORLDY; j++){
@@ -267,6 +279,7 @@ int start_battle_state(Map *m){ //Input the player and the npc in question. UPDA
 		key = getch();
 		switch(key){
 		case 'q':
+			npc->isDefeated= true;
 			in_battle = false;
 			break;
 		}
@@ -285,7 +298,24 @@ static int is_border(int x, int y, struct Map *m)
     return 0;
 }
 
-static int is_occupied(int x, int y, struct Map *m, entity *self) //Need this to return an entity, shouldn't break anything since if statements only care whether things are 0 or not
+//Lowkey I should start keeping a separate array for entities
+static entity* player_entity_collision(entity* entities[], entity *player){ //I've decided that I'm just going to copy the entire heap over into an array.
+	//iterate through, and return the entity at hand which collided
+	int i;
+	for(i = 0; entities[i] != NULL; i++){
+		if(entities[i]->x == player->x && entities[i]->y == player->y){
+			entities[i]->isDefeated = true;
+			return entities[i];
+		}
+	}
+
+	return NULL;
+
+}
+
+static int is_occupied(int x, int y, struct Map *m, entity *self) //This is okay to just return an int since it's only being used for the npcs.
+//Maybe in a further refactor, I could put the logic for the check inside of here but also that might bog the game down sinces thats an
+//O(n) running everytime anything whatsoever runs into something
 {
     char tile = m->arr[x][y];
     /* Player and NPC markers count as occupied */
@@ -323,7 +353,7 @@ int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m) {
 //        }
         if(m->arr[new_x][new_y] == '@'){
         	run_battle_sequence();
-        	start_battle_state(m);
+        	start_battle_state(m, npc);
         	return getTerrainCost(m->arr[npc->x][npc->y], npc);
         }
         if(is_occupied(new_x, new_y, m, npc)) continue;
@@ -647,18 +677,26 @@ int check_if_spawns_on(char tile, char spawnables[4]){
 	return 0;
 }
 
-int spawnEntities(heap_t *eq, int rand_num, struct Map *m){
+int spawnEntities(heap_t *eq, entity* entities[], int rand_num, struct Map *m){
 	int i;
-	entity *explorer = malloc(sizeof(entity));
-	(*explorer) = CreateEntity(EXPLORERS, 0, 0);
-	spawnEntity(explorer, EXPLORERS, m);
-	enqueue_entity(eq, explorer, 0);
+	printf("Hello I make it inside spawnEntities\n");
+//	entity *explorer = malloc(sizeof(entity)); //For testing purposes
+//	explorer = CreateEntity(EXPLORERS, 0, 0);
+//	spawnEntity(explorer, EXPLORERS, m);
+//	enqueue_entity(eq, explorer, 0);
 	    for (i = 0; i < rand_num; i++) {
-	        entity *npc = malloc(sizeof(entity));
+	    	printf("I make it inside of here\n");
+	    	entity *npc;
+	        npc  = malloc(sizeof(entity));
 	        int rand_entity = rand() % 6 + 1;
-	        (*npc) = CreateEntity(rand_entity, 0, 0);
-	        spawnEntity(npc, rand_entity, m);
+	        *(npc) = CreateEntity(rand_entity, 0, 0);
+	        printf("Entity is created\n");
+	        spawnEntity(npc, rand_entity, m); //NEED TO FIX
+	        printf("Entity is initialized\n");
+	        entities[i] = npc;
+	        printf("Entity is in array\n");
 	        enqueue_entity(eq, npc, 0);
+	        printf("Enitity spawned: %d", npc->id);
 	    }
 	    return 0;
 	}
