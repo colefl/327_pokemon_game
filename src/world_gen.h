@@ -73,12 +73,13 @@ int pepperInTrees(Map *m);
 int spawnEntities(heap_t *eq, entity* entities[], int rand_num, struct Map *m);
 int spawnEntity(entity *npc, int id, Map *m);
 int32_t cell_compare(const void *key, const void *with);
-int dijkstrasAlgo(Map *m, entity *player, entity *npc, int dist[80][21]);
+int dijkstrasAlgo(struct Map *m, int x, int y, entity *npc, int dist[80][21]);
 int check_if_spawns_on(char tile, char spawnables[4]);
 
 //GAMELOOP
-void runGameLoop(heap_t *eq, entity* entities[], Map *m);
-int handle_npc_movement(entity *npc, int dist[80][21] , Map *m);
+void runGameLoop(heap_t *eq, entity* entities[], struct Map *m, int num_of_npcs);
+entity* start_battle_state(Map *m, entity *npc);
+int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m, entity* entities[]);
 int handle_wanderer_movement(entity *npc, Map *m);
 int handle_pacer_movement(entity *npc, Map *m);
 int handle_explorer_movement(entity *npc, Map *m);
@@ -86,6 +87,7 @@ int handle_explorer_movement(entity *npc, Map *m);
 //Helper
 int print_board(Map *m);
 int print_costs(int arr[80][21], entity *player);
+void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open);
 
 
 #endif /* WORLD_GEN_H_ */

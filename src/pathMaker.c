@@ -470,6 +470,8 @@ bool checkForCenter(int wx, int wy, pathMaker *pm){
 					(pm->map->arr[wx + 1][wy + 2] != '#' && pm->map->arr[wx + 1][wy + 2] != '%')){ //top right
 
 				pm->map->arr[wx][wy + 1] = 'C';
+				pm->centerLocationX = wx; //For some funsie stuff with pathfinding
+				pm->centerLocationY = wy + 1;
 				pm->map->arr[wx + 1][wy + 1] = 'C';
 				pm->map->arr[wx][wy + 2] = 'C';
 				pm->map->arr[wx + 1][wy + 2] = 'C';

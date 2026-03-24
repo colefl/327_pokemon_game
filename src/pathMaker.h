@@ -14,6 +14,9 @@
 typedef struct {
     Map *map;
     entity* player;
+    //Possibly will add the squares for the center into this;
+    int centerLocationX;
+    int centerLocationY;
 } pathMaker;
 
 

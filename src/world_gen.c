@@ -47,13 +47,13 @@ int pepperInTrees(struct Map *m);
 int spawnEntities(heap_t *eq, entity* entities[], int rand_num, struct Map *m);
 int spawnEntity(entity *npc, int id, struct Map *m);
 int32_t cell_compare(const void *key, const void *with);
-int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]);
+int dijkstrasAlgo(struct Map *m, int x, int y, entity *npc, int dist[80][21]);
 static int getTerrainCost(char tile, entity *npc);
 int check_if_spawns_on(char tile, char spawnables[4]);
 
 //GAMELOOP
-void runGameLoop(heap_t *eq, entity* entities[], struct Map *m);
-int handle_npc_movement(entity *npc, int dist[80][21] , struct Map *m);
+void runGameLoop(heap_t *eq, entity* entities[], struct Map *m, int num_of_npcs);
+int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m, entity* entities[]);
 int handle_wanderer_movement(entity *npc, struct Map *m);
 int handle_pacer_movement(entity *npc, struct Map *m);
 int handle_explorer_movement(entity *npc, struct Map *m);
@@ -65,19 +65,25 @@ int print_board(struct Map *m);
 int print_costs(int arr[80][21], entity *player);
 int paint_board(struct Map *m);
 int run_battle_sequence();
-int start_battle_state(struct Map *m, entity *npc);
-static entity* player_entity_collision(entity* entities[], entity *player);
+entity* start_battle_state(Map *m, entity *npc);
+static entity* player_entity_collision(entity* entities[], int target_x, int target_y, int n);
+void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open);
 
 //Variables
 
 int rand_num;
 int count;
+uint32_t player_time = 0;
 
 entity *player;
 heap_t eq; //Entity queue
 
 int hiker_dist[80][21];
 int rival_dist[80][21];
+int center_dist[80][21];
+
+int centerX;
+int centerY;
 
 struct point g1, g2, tg1, tg2, w;
 
@@ -118,11 +124,13 @@ int init_map(struct Map *m){
 
 	player = malloc(sizeof (entity)); //Need to free
 
-	printf("I make it past init_world_edge\n");
+	//printf("I make it past init_world_edge\n");
 	pathMaker pm = makePathMaker(m, player);
 	makePaths(&pm); //This may break when used along other maps...
 	m = pm.map;
-	printf("Hello I make it to makePaths\n");
+	centerX = pm.centerLocationX;
+	centerY = pm.centerLocationY;
+	//printf("Hello I make it to makePaths\n");
 	player = pm.player;
 	//printf("Hello the error is here lol\n");
 
@@ -131,36 +139,40 @@ int init_map(struct Map *m){
 
 	entity* entities[num_of_npcs];
 
-	printf("hello I make it before spawnEntities\n");
+	//printf("hello I make it before spawnEntities\n");
 
 	spawnEntities(&eq, entities, num_of_npcs,  m);
 
-	printf("hello I make it here to spawnEntities\n");
+	//printf("hello I make it here to spawnEntities\n");
 
 	entity* hiker_template = CreateEntity(HIKER, 0, 0);
 	entity* rival_template = CreateEntity(RIVAL, 0, 0);
-	dijkstrasAlgo(m, player, hiker_template, hiker_dist);
-	dijkstrasAlgo(m, player, rival_template, rival_dist);
+	dijkstrasAlgo(m, player->x, player->y, hiker_template, hiker_dist);
+	dijkstrasAlgo(m, player->x, player->y, rival_template, rival_dist);
+	dijkstrasAlgo(m, centerX, centerY, player, center_dist);
 
 	enqueue_entity(&eq, player, 0);
 
-	runGameLoop(&eq, entities, m);
+	runGameLoop(&eq, entities, m, num_of_npcs);
 
 	return 0;
 }
 
-void runGameLoop(heap_t *eq, entity* entities[], struct Map *m) {
+void runGameLoop(heap_t *eq, entity* entities[], struct Map *m, int num_of_npcs) {
 
     int current_time = 0;
     entity_move *event;
     bool quit_game = false;
+    bool npc_window_open = false;
     char key = 'k';
     initscr();
     raw();
     noecho();
     keypad(stdscr, TRUE);
 
-    printf("hello I make it inside the game loop\n");
+
+
+    //printf("hello I make it inside the game loop\n");
 
     //Idea for tomorrow: have a battle sequence boolean or int or something and that way if there's a battle sequence going on we can switch from the game state
     //ADD A GAME STATE INTEGER AND A THINGY UP TOP AN ENUM OH YEA
@@ -185,67 +197,165 @@ void runGameLoop(heap_t *eq, entity* entities[], struct Map *m) {
         switch (event->npc->id) {
 
         case PLAYER: {
-        	//REMEMEBER TO PUT IN HELPER FUNCTION FOR READIBILITY
-        	key = getch();
-        	switch(key){
-				case 'k': //Moving upwards
-					if(is_occupied(player->x, player->y - 1, m, player)){
-						tmp = player_entity_collision(entities, player); //Need to finish logic
-						if(!(tmp->isDefeated)){
-							run_battle_sequence();
-							start_battle_state(m, tmp); //Yas Okay I'm starting to get confused because now wouldn't I need to input the entities arr into start_battle_state??
-						}
-					}
-					if(is_border(player->x, player->y, m)) break;
-					m->arr[player->x][player->y] = player->prev_tile;
-					player->prev_tile = m->arr[player->x][player->y - 1];
-					player->x = player->x + 0;
-					player->y = player->y - 1;
-					m->arr[player->x][player->y] = player->marker;
-					break;
+        	player_time = current_time;
+        	bool should_paint = true;
+            key = getch();
+            switch(key){
+                case 'k': // Moving upwards
+                    if(is_occupied(player->x, player->y - 1, m, player)){
+                        tmp = player_entity_collision(entities, player->x, player->y - 1, num_of_npcs);
+                        if(tmp != NULL && !(tmp->isDefeated)){
+                            run_battle_sequence();
+                            start_battle_state(m, tmp);
+                        }
+                        break;
+                    }
+                    if(is_border(player->x, player->y - 1, m)) break;
+                    m->arr[player->x][player->y] = player->prev_tile;
+                    player->prev_tile = m->arr[player->x][player->y - 1];
+                    player->y = player->y - 1;
+                    m->arr[player->x][player->y] = player->marker;
+                    break;
 
-				case '.':
-					break;
+                case 'j': // Moving downwards
+                    if(is_occupied(player->x, player->y + 1, m, player)){
+                        tmp = player_entity_collision(entities, player->x, player->y + 1, num_of_npcs);
+                        if(tmp != NULL && !(tmp->isDefeated)){
+                            run_battle_sequence();
+                            start_battle_state(m, tmp);
+                        }
+                        break;
+                    }
+                    if(is_border(player->x, player->y + 1, m)) break;
+                    m->arr[player->x][player->y] = player->prev_tile;
+                    player->prev_tile = m->arr[player->x][player->y + 1];
+                    player->y = player->y + 1;
+                    m->arr[player->x][player->y] = player->marker;
+                    break;
 
-        		case 'q':
-        	        quit_game = true;
-        	        //free(player);
-        	        break;
+                case 'h': // Moving left
+                    if(is_occupied(player->x - 1, player->y, m, player)){
+                        tmp = player_entity_collision(entities, player->x - 1, player->y, num_of_npcs);
+                        if(tmp != NULL && !(tmp->isDefeated)){
+                            run_battle_sequence();
+                            start_battle_state(m, tmp);
+                        }
+                        break;
+                    }
+                    if(is_border(player->x - 1, player->y, m)) break;
+                    m->arr[player->x][player->y] = player->prev_tile;
+                    player->prev_tile = m->arr[player->x - 1][player->y];
+                    player->x = player->x - 1;
+                    m->arr[player->x][player->y] = player->marker;
+                    break;
 
-        		default:
-        			break;
-        	}
+                case 'l': // Moving right
+                    if(is_occupied(player->x + 1, player->y, m, player)){
+                        tmp = player_entity_collision(entities, player->x + 1, player->y, num_of_npcs);
+                        if(tmp != NULL && !(tmp->isDefeated)){
+                            run_battle_sequence();
+                            start_battle_state(m, tmp);
+                        }
+                        break;
+                    }
+                    if(is_border(player->x + 1, player->y, m)) break;
+                    m->arr[player->x][player->y] = player->prev_tile;
+                    player->prev_tile = m->arr[player->x + 1][player->y];
+                    player->x = player->x + 1;
+                    m->arr[player->x][player->y] = player->marker;
+                    break;
+
+                case 'q':
+                    quit_game = true;
+                    break;
+
+                case '.':
+                	break;
+
+                case 't':
+                	toggle_npc_window(entities, num_of_npcs, &npc_window_open);
+                	if(!npc_window_open){
+                	    paint_board(m);
+                	}
+                	should_paint = false;
+                	enqueue_entity(eq, player, current_time); //I have to skip the enqueue at the bottom otherwise when I press t again it will advance
+                	continue;
+                    break;
+
+                default:
+                    break;
+            }
         	//printf("Player pos: x=%d y=%d\n", player.x, player.y);
         	entity* hiker_template = CreateEntity(HIKER, 0, 0);
         	entity* rival_template = CreateEntity(RIVAL, 0, 0);
-        	dijkstrasAlgo(m, player, hiker_template, hiker_dist); //POSSIBLE UNCAUGHT ERROR SINCE SWITCHING TO
-        	dijkstrasAlgo(m, player, rival_template, rival_dist);
-            paint_board(m);
+        	dijkstrasAlgo(m, player->x, player->y, hiker_template, hiker_dist); //POSSIBLE UNCAUGHT ERROR SINCE SWITCHING TO
+        	dijkstrasAlgo(m, player->x, player->y, rival_template, rival_dist);
+        	dijkstrasAlgo(m, centerX, centerY, player, center_dist);
+        	if(should_paint){
+        	        paint_board(m);
+        	    }
+            //paint_board(m);
+        	//printf("Center location: %d, %d\n", centerX, centerY);
             //usleep(500000);
             terrain_cost = 10;
             break;
         }
         case HIKER:
-            terrain_cost = handle_npc_movement(event->npc, hiker_dist, m);
+        	if(event->npc->isDefeated){
+        		terrain_cost = handle_npc_movement(event->npc, center_dist, m, entities);
+        	} else {
+        		terrain_cost = handle_npc_movement(event->npc, hiker_dist, m, entities);
+        	}
+
+//        	if(tmp->isDefeated){
+//        		terrain_cost = handle_npc_movement(event->npc, center_dist, m, entities);
+//        	} else {
+//        		terrain_cost = handle_npc_movement(event->npc, hiker_dist, m, entities);
+//        	}
             break;
 
         case RIVAL:
-            terrain_cost = handle_npc_movement(event->npc, rival_dist, m);
+        	if(event->npc->isDefeated){
+        		terrain_cost = handle_npc_movement(event->npc, center_dist, m, entities);
+        	} else {
+        		terrain_cost = handle_npc_movement(event->npc, rival_dist, m, entities);
+        	}
             break;
 
         case PACER:
-            terrain_cost = handle_pacer_movement(event->npc, m);
+        	if(event->npc->isDefeated){
+        		terrain_cost = handle_npc_movement(event->npc, center_dist, m, entities);
+        	} else {
+        		terrain_cost = handle_pacer_movement(event->npc, m);
+        	}
             break;
 
         case WANDERER:
-        	terrain_cost = handle_wanderer_movement(event->npc, m);
+        	if(event->npc->isDefeated){
+        		terrain_cost = handle_npc_movement(event->npc, center_dist, m, entities);
+        	} else {
+        		terrain_cost = handle_wanderer_movement(event->npc, m);
+        	}
         	break;
 
         case EXPLORERS: //Oops did not mean to make that plural
-        	terrain_cost = handle_explorer_movement(event->npc, m);
+        	if(event->npc->isDefeated){
+        		terrain_cost = handle_npc_movement(event->npc, center_dist, m, entities);
+        	} else {
+        		terrain_cost = handle_explorer_movement(event->npc, m);
+        	}
         	break;
 
+        case SENTRY:
+        	if(event->npc->isDefeated){
+        		terrain_cost = handle_npc_movement(event->npc, center_dist, m, entities);
+        	} else {
+        		terrain_cost = 10;
+        	}
+            break;
+
         default:
+        	printf("DEFAULT HIT: npc id=%d\n", event->npc->id);
             free(event);
             continue;
         }
@@ -253,7 +363,41 @@ void runGameLoop(heap_t *eq, entity* entities[], struct Map *m) {
         entity *npc = event->npc;
         free(event);
 
-        enqueue_entity(eq, npc, current_time + (uint32_t) terrain_cost);
+        if(npc->id == PLAYER){
+            enqueue_entity(eq, npc, current_time + (uint32_t)terrain_cost - 1);
+            continue;
+        }
+
+        if(npc->isDefeated && center_dist[npc->x][npc->y] == 0){
+            m->arr[npc->x][npc->y] = npc->prev_tile;
+            continue;
+        }
+
+        if(npc->isDefeated){
+            enqueue_entity(eq, npc, player_time + (uint32_t) terrain_cost);
+        } else {
+            enqueue_entity(eq, npc, current_time + (uint32_t) terrain_cost);
+        }
+//        if(npc->isDefeated){
+//            printf("EXIT CHECK: x=%d y=%d tile=%c center_dist=%d\n",
+//                   npc->x, npc->y, m->arr[npc->x][npc->y], center_dist[npc->x][npc->y]);
+//            if(center_dist[npc->x][npc->y] == 0){
+//                m->arr[npc->x][npc->y] = npc->prev_tile;
+//                continue;
+//            }
+//        }
+//        if(npc->isDefeated){
+//            printf("EXIT CHECK: x=%d y=%d center_dist=%d\n",
+//                   npc->x, npc->y, center_dist[npc->x][npc->y]);
+//            if(center_dist[npc->x][npc->y] == 0){
+//                m->arr[npc->x][npc->y] = npc->prev_tile;
+//                continue;
+//            }
+//        }
+//        if(npc->isDefeated){
+//            printf("Defeated NPC at x=%d y=%d, center at x=%d y=%d, center_dist=%d\n",
+//                   npc->x, npc->y, centerX, centerY, center_dist[npc->x][npc->y]);
+//        }
     }
     endwin();
 }
@@ -275,16 +419,19 @@ entity* start_battle_state(Map *m, entity *npc){ //Input the player and the npc 
 		usleep(1000);
 	}
 	while(in_battle){
-		char key = 'h';
-		key = getch();
-		switch(key){
-		case 'q':
-			npc->isDefeated= true;
-			in_battle = false;
-			break;
-		}
-	}
-	paint_board(m);
+	        char key = 'h';
+	        key = getch();
+	        switch(key){
+	        case 'q':
+	            npc->isDefeated = true;
+	            in_battle = false;
+	            // Recompute center_dist immediately using the NPC's current position
+	            entity* center_template = CreateEntity(HIKER, 0, 0);
+	            dijkstrasAlgo(m, centerX, centerY, center_template, center_dist);
+	            break;
+	        }
+	    }
+	    paint_board(m);
 	return npc; // perhaps this works?
 }
 
@@ -299,18 +446,14 @@ static int is_border(int x, int y, struct Map *m)
 }
 
 //Lowkey I should start keeping a separate array for entities
-static entity* player_entity_collision(entity* entities[], entity *player){ //I've decided that I'm just going to copy the entire heap over into an array.
-	//iterate through, and return the entity at hand which collided
-	int i;
-	for(i = 0; entities[i] != NULL; i++){
-		if(entities[i]->x == player->x && entities[i]->y == player->y){
-			entities[i]->isDefeated = true;
-			return entities[i];
-		}
-	}
-
-	return NULL;
-
+static entity* player_entity_collision(entity* entities[], int target_x, int target_y, int n) {
+    int i;
+    for(i = 0; i < n; i++){
+        if(entities[i]->x == target_x && entities[i]->y == target_y){
+            return entities[i];
+        }
+    }
+    return NULL;
 }
 
 static int is_occupied(int x, int y, struct Map *m, entity *self) //This is okay to just return an int since it's only being used for the npcs.
@@ -333,7 +476,7 @@ static int is_occupied(int x, int y, struct Map *m, entity *self) //This is okay
 //
 //}
 
-int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m) {
+int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m, entity* entities[]) {
     int dx[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
     int dy[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
 
@@ -341,20 +484,37 @@ int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m) {
     int best_y = npc->y;
     int bestCost = INT_MAX;
 
+
+
     int i;
+
+//    if(npc->isDefeated){
+//            for(i = 0; i < 8; i++){
+//                int new_x = npc->x + dx[i];
+//                int new_y = npc->y + dy[i];
+//                printf("neighbor x=%d y=%d tile=%c dist=%d occupied=%d border=%d\n",
+//                       new_x, new_y, m->arr[new_x][new_y],
+//                       dist[new_x][new_y],
+//                       is_occupied(new_x, new_y, m, npc),
+//                       is_border(new_x, new_y, m));
+//            }
+//        }
+
     for (i = 0; i < 8; i++) {
         int new_x = npc->x + dx[i];
         int new_y = npc->y + dy[i];
-
 //        if (is_occupied(new_x, new_y, m, npc) == 1 || is_occupied(new_x, new_y, m, npc) == 0){
 //        	continue;
 //        } else if(is_occupied(new_x, new_y, m, npc) == 2){
 //        	run_battle_sequence();
 //        }
-        if(m->arr[new_x][new_y] == '@'){
-        	run_battle_sequence();
-        	start_battle_state(m, npc);
-        	return getTerrainCost(m->arr[npc->x][npc->y], npc);
+        if(m->arr[new_x][new_y] == '@') {
+            if(!npc->isDefeated) {
+                run_battle_sequence();
+                start_battle_state(m, npc);
+                return getTerrainCost(m->arr[npc->x][npc->y], npc);
+            }
+            continue; //skip the player tile and keep scanning
         }
         if(is_occupied(new_x, new_y, m, npc)) continue;
         if (is_border(new_x, new_y, m)) continue;
@@ -704,7 +864,6 @@ int spawnEntities(heap_t *eq, entity* entities[], int rand_num, struct Map *m){
 	    }
 	    return 0;
 	}
-	//free(npc);
 
 
 //This is a not-dynamic spawning of entities on the world
@@ -742,29 +901,29 @@ int32_t cell_compare(const void *key, const void *with) {
     return ((map_cell_t *)key)->cost - ((map_cell_t *)with)->cost;
 }
 
-int dijkstrasAlgo(struct Map *m, entity *player, entity *npc, int dist[80][21]){
+int dijkstrasAlgo(struct Map *m, int x, int y, entity *npc, int dist[80][21]){
     heap_t h;
     heap_node_t *nodes[80][21];
     map_cell_t  *cells[80][21];
 
-    int x, y;
-    for (x = 0; x < 80; x++) {
-        for (y = 0; y < 21; y++) {
-            dist[x][y] = INT_MAX;
-            nodes[x][y] = NULL;
-            cells[x][y] = NULL;
+    int da_x, da_y;
+    for (da_x = 0; da_x < 80; da_x++) {
+        for (da_y = 0; da_y < 21; da_y++) {
+            dist[da_x][da_y] = INT_MAX;
+            nodes[da_x][da_y] = NULL;
+            cells[da_x][da_y] = NULL;
         }
     }
 
     heap_init(&h, cell_compare, free);
 
     map_cell_t *start = malloc(sizeof(map_cell_t)); //Evil segmentation arror...
-    start->x = player->x;
-    start->y = player->y;
+    start->x = x;
+    start->y = y;
     start->cost = 0;
-    dist[player->x][player->y] = 0;
-    cells[player->x][player->y] = start;
-    nodes[player->x][player->y] = heap_insert(&h, start); //Inserting the initial heap node
+    dist[x][y] = 0;
+    cells[x][y] = start;
+    nodes[x][y] = heap_insert(&h, start); //Inserting the initial heap node
 
     //Same thing as what I used for knights tour
     int dx[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
@@ -897,6 +1056,60 @@ int run_battle_sequence(){
 		refresh();
 	}
 	return 0;
+}
+
+void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open){
+    if(*window_open){
+        // Close the window by just repainting the board over it
+        *window_open = false;
+        return;
+    }
+
+    // Window dimensions and position
+    int win_h = 15;
+    int win_w = 40;
+    int win_y = (WORLDY / 2) - (win_h / 2);
+    int win_x = (WORLDX / 2) - (win_w / 2);
+
+    // Draw border
+    int i, j;
+    for(i = win_y; i < win_y + win_h; i++){
+        for(j = win_x; j < win_x + win_w; j++){
+            if(i == win_y || i == win_y + win_h - 1){
+                mvaddch(i, j, '-');
+            } else if(j == win_x || j == win_x + win_w - 1){
+                mvaddch(i, j, '|');
+            } else {
+                mvaddch(i, j, ' ');
+            }
+        }
+    }
+
+    // Draw title
+    char *title = "[ NPC LIST ]";
+    mvprintw(win_y, win_x + (win_w / 2) - (strlen(title) / 2), "%s", title);
+
+    // List NPCs
+    int row = win_y + 1;
+    int max_rows = win_h - 2;
+    for(i = 0; i < num_of_npcs && max_rows > 0; i++, max_rows--){
+        char *type;
+        switch(entities[i]->id){
+            case HIKER:    type = "Hiker";    break;
+            case RIVAL:    type = "Rival";    break;
+            case PACER:    type = "Pacer";    break;
+            case WANDERER: type = "Wanderer"; break;
+            case SENTRY:   type = "Sentry";   break;
+            case EXPLORERS:type = "Explorer"; break;
+            default:       type = "Unknown";  break;
+        }
+        char *status = entities[i]->isDefeated ? "Defeated" : "Active";
+        mvprintw(row++, win_x + 2, "%-10s x=%-3d y=%-3d %s",
+                 type, entities[i]->x, entities[i]->y, status);
+    }
+
+    refresh();
+    *window_open = true;
 }
 
 int print_costs(int arr[80][21], entity *player){
