@@ -123,7 +123,7 @@ int init_map(struct Map *m){
 	makePaths(&pm); //This may break when used along other maps...
 	m = pm.map;
 	printf("Hello I make it to makePaths\n");
-	player = &(pm.player);
+	player = pm.player;
 	//printf("Hello the error is here lol\n");
 
 	int num_of_npcs;
@@ -137,10 +137,10 @@ int init_map(struct Map *m){
 
 	printf("hello I make it here to spawnEntities\n");
 
-	entity hiker_template = CreateEntity(HIKER, 0, 0);
-	entity rival_template = CreateEntity(RIVAL, 0, 0);
-	dijkstrasAlgo(m, player, &hiker_template, hiker_dist);
-	dijkstrasAlgo(m, player, &rival_template, rival_dist);
+	entity* hiker_template = CreateEntity(HIKER, 0, 0);
+	entity* rival_template = CreateEntity(RIVAL, 0, 0);
+	dijkstrasAlgo(m, player, hiker_template, hiker_dist);
+	dijkstrasAlgo(m, player, rival_template, rival_dist);
 
 	enqueue_entity(&eq, player, 0);
 
@@ -191,7 +191,7 @@ void runGameLoop(heap_t *eq, entity* entities[], struct Map *m) {
 				case 'k': //Moving upwards
 					if(is_occupied(player->x, player->y - 1, m, player)){
 						tmp = player_entity_collision(entities, player); //Need to finish logic
-						if(tmp->isDefeated != true){
+						if(!(tmp->isDefeated)){
 							run_battle_sequence();
 							start_battle_state(m, tmp); //Yas Okay I'm starting to get confused because now wouldn't I need to input the entities arr into start_battle_state??
 						}
@@ -216,10 +216,10 @@ void runGameLoop(heap_t *eq, entity* entities[], struct Map *m) {
         			break;
         	}
         	//printf("Player pos: x=%d y=%d\n", player.x, player.y);
-        	entity hiker_template = CreateEntity(HIKER, 0, 0);
-        	entity rival_template = CreateEntity(RIVAL, 0, 0);
-        	dijkstrasAlgo(m, player, &hiker_template, hiker_dist); //POSSIBLE UNCAUGHT ERROR SINCE SWITCHING TO
-        	dijkstrasAlgo(m, player, &rival_template, rival_dist);
+        	entity* hiker_template = CreateEntity(HIKER, 0, 0);
+        	entity* rival_template = CreateEntity(RIVAL, 0, 0);
+        	dijkstrasAlgo(m, player, hiker_template, hiker_dist); //POSSIBLE UNCAUGHT ERROR SINCE SWITCHING TO
+        	dijkstrasAlgo(m, player, rival_template, rival_dist);
             paint_board(m);
             //usleep(500000);
             terrain_cost = 10;
@@ -258,7 +258,7 @@ void runGameLoop(heap_t *eq, entity* entities[], struct Map *m) {
     endwin();
 }
 
-int start_battle_state(Map *m, entity *npc){ //Input the player and the npc in question. UPDATE ENTITY TO INCLUDE IS_DEFEATED
+entity* start_battle_state(Map *m, entity *npc){ //Input the player and the npc in question. UPDATE ENTITY TO INCLUDE IS_DEFEATED
 	int i,j;
 		for(i = 0; i < WORLDX; i++){
 			for(j = 0; j < WORLDY; j++){
@@ -285,7 +285,7 @@ int start_battle_state(Map *m, entity *npc){ //Input the player and the npc in q
 		}
 	}
 	paint_board(m);
-	return 0;
+	return npc; // perhaps this works?
 }
 
 static int is_border(int x, int y, struct Map *m)
@@ -669,10 +669,13 @@ int get_num(int count, struct Map *m){
 
 int check_if_spawns_on(char tile, char spawnables[4]){
 	int i;
+	printf("debug: ");
 	for(i = 0; i < 4; i++){
+		printf("%c, ", spawnables[i]);
 		if(tile == spawnables[i]){
 			return 1;
 		}
+		printf("\n");
 	}
 	return 0;
 }
@@ -685,12 +688,13 @@ int spawnEntities(heap_t *eq, entity* entities[], int rand_num, struct Map *m){
 //	spawnEntity(explorer, EXPLORERS, m);
 //	enqueue_entity(eq, explorer, 0);
 	    for (i = 0; i < rand_num; i++) {
-	    	printf("I make it inside of here\n");
+	    	//printf("I make it inside of here\n");
 	    	entity *npc;
 	        npc  = malloc(sizeof(entity));
 	        int rand_entity = rand() % 6 + 1;
-	        *(npc) = CreateEntity(rand_entity, 0, 0);
-	        printf("Entity is created\n");
+	        npc = CreateEntity(rand_entity, 0, 0);
+	        printf("npc isSpawned = %b\n", npc->isSpawned);
+	        //printf("Entity is created\n");
 	        spawnEntity(npc, rand_entity, m); //NEED TO FIX
 	        printf("Entity is initialized\n");
 	        entities[i] = npc;
@@ -717,16 +721,17 @@ int spawnEntity(entity *npc, int id, struct Map *m){
 		while(!npc->isSpawned){
 				rand_x = rand() % 78 + 1;
 				rand_y = rand() % 19 + 1;
-				if(check_if_spawns_on(m->arr[rand_x][rand_y], npc->spawnsOn)){
+				if(check_if_spawns_on(m->arr[rand_x][rand_y], npc->spawnsOn)){ //So npc is full of garbage values rn
 					//printf("Okay I'm getting put onto something\n");
 					npc->x = rand_x;
 					npc->y = rand_y;
 					npc->prev_tile = m->arr[rand_x][rand_y]; /* save terrain BEFORE overwriting */
 					npc->direction = rand() % 8;
-					//printf("Here is what's spawning: %c\n", entities[i].marker);
+					printf("Here is what's spawning: %c\n", npc->marker);
 					npc->isSpawned = true;
 
 				} else {
+					//printf("I'm continuing\n");
 				    continue;
 				}
 			}
@@ -871,7 +876,7 @@ int print_board(struct Map *m){
 	return 0;
 }
 
-int paint_board(struct Map *m){
+int paint_board(struct Map *m){ //Add message char* parameter that displays on the first line
 	int i,j;
 	for(i = 0; i < WORLDX; i++){
 		for(j = 0; j < WORLDY; j++){

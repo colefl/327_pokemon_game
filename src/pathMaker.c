@@ -83,7 +83,7 @@ pathMaker makePathMaker(Map *m, entity *player){
 	pathMaker tmp;
 
 	tmp.map = m;
-	tmp.player = *player;
+	tmp.player = player;
 
 	return tmp;
 }
@@ -135,9 +135,9 @@ int connectE_W(int ex, int ey, int wx, int wy, pathMaker *pm){
 			spawned = checkForCenter(wx, wy, pm);
 		}
 		if(count >= pSpawn && !pSpawned){
-			pm->player = CreateEntity(PLAYER, wx, wy);
-			pm->player.prev_tile = '#'; //Spawns on a path for now
-			pm->map->arr[wx][wy] = pm->player.marker;
+			pm->player = CreateEntity(PLAYER, wx, wy); //Need to figure out
+			pm->player->prev_tile = '#'; //Spawns on a path for now
+			pm->map->arr[wx][wy] = pm->player->marker;
 			pSpawned = true;
 			rand_num = rand();
 		}

@@ -13,7 +13,7 @@
 
 typedef struct {
     Map *map;
-    entity player;
+    entity* player;
 } pathMaker;
 
 

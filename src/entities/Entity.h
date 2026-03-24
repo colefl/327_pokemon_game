@@ -43,7 +43,7 @@ typedef struct {
 int copyArrs(int arr1[NUM_OF_TILES], int arr2[NUM_OF_TILES]);
 int printArr(int arr[NUM_OF_TILES]);
 
-entity CreateEntity(int id, int x, int y);
+entity* CreateEntity(int id, int x, int y);
 
 int deleteEntity(entity *npc);
 
