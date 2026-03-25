@@ -425,7 +425,7 @@ int start_center_state(Map *m){
 		refresh();
 	}
 	bool in_center = true;
-	char center_debug_screen[] = "Press < to exit center\mart";
+	char center_debug_screen[] = "Press < to exit center'\'mart";
 	int k;
 	for(k = 0; k < strlen(center_debug_screen); k++){
 		mvaddch(13, k + (WORLDX /2), center_debug_screen[k]);
@@ -1158,9 +1158,33 @@ void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open){
             case EXPLORERS: type = "Explorer"; break;
             default:        type = "Unknown";  break;
         }
-        char *status = entities[i]->isDefeated ? "Defeated" : "Active";
-        mvwprintw(pad, i, 0, "%-10s x=%-3d y=%-3d %s",
-                  type, entities[i]->x, entities[i]->y, status);
+        //char *status = entities[i]->isDefeated ? "Defeated" : "Active";
+        int entityDistX = entities[i]->x - player->x;
+        int entityDistY = entities[i]->y - player->y;
+        char dirX = 'W';
+        char dirY = 'N';
+
+        if(entityDistX > 0){
+        	dirX = 'E';
+        } else if (entityDistX < 0){
+        	entityDistX *= -1;
+        	dirX = 'W';
+        } else {
+        	dirX = ' ';
+        }
+
+        if(entityDistY > 0){
+        	dirY = 'S';
+        } else if (entityDistY < 0){
+        	entityDistY *= -1;
+        	dirY = 'N';
+        } else {
+        	dirY = ' ';
+        }
+
+
+        mvwprintw(pad, i, 0, "%-10s %-3d%c %-3d %c",
+                  type, entityDistX, dirX, entityDistY, dirY);
     }
 
     int scroll = 0;
