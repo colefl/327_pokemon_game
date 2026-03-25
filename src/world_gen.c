@@ -1060,56 +1060,86 @@ int run_battle_sequence(){
 
 void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open){
     if(*window_open){
-        // Close the window by just repainting the board over it
         *window_open = false;
         return;
     }
 
-    // Window dimensions and position
+    *window_open = true;
+
     int win_h = 15;
     int win_w = 40;
     int win_y = (WORLDY / 2) - (win_h / 2);
     int win_x = (WORLDX / 2) - (win_w / 2);
+    int list_h = win_h - 2;
 
-    // Draw border
-    int i, j;
-    for(i = win_y; i < win_y + win_h; i++){
-        for(j = win_x; j < win_x + win_w; j++){
-            if(i == win_y || i == win_y + win_h - 1){
-                mvaddch(i, j, '-');
-            } else if(j == win_x || j == win_x + win_w - 1){
-                mvaddch(i, j, '|');
-            } else {
-                mvaddch(i, j, ' ');
-            }
-        }
+    WINDOW *npc_win = newwin(win_h, win_w, win_y, win_x); //Lowkey the hardest part for me
+    int i;
+    for(i = 0; i < win_w; i++){
+        mvwaddch(npc_win, 0, i, '-');
+        mvwaddch(npc_win, win_h - 1, i, '-');
+    }
+    for(i = 0; i < win_h; i++){
+        mvwaddch(npc_win, i, 0, '|');
+        mvwaddch(npc_win, i, win_w - 1, '|');
     }
 
-    // Draw title
     char *title = "[ NPC LIST ]";
-    mvprintw(win_y, win_x + (win_w / 2) - (strlen(title) / 2), "%s", title);
+    mvwprintw(npc_win, 0, (win_w / 2) - (strlen(title) / 2), "%s", title);
+    mvwprintw(npc_win, win_h - 1, 2, "j/k to scroll, t to close");
 
-    // List NPCs
-    int row = win_y + 1;
-    int max_rows = win_h - 2;
-    for(i = 0; i < num_of_npcs && max_rows > 0; i++, max_rows--){
+    wrefresh(npc_win);
+
+    //stolen from stackoverflow
+    WINDOW *pad = newpad(num_of_npcs + 1, win_w - 2);
+
+    //int i;
+    for(i = 0; i < num_of_npcs; i++){
         char *type;
         switch(entities[i]->id){
-            case HIKER:    type = "Hiker";    break;
-            case RIVAL:    type = "Rival";    break;
-            case PACER:    type = "Pacer";    break;
-            case WANDERER: type = "Wanderer"; break;
-            case SENTRY:   type = "Sentry";   break;
-            case EXPLORERS:type = "Explorer"; break;
-            default:       type = "Unknown";  break;
+            case HIKER:     type = "Hiker";    break;
+            case RIVAL:     type = "Rival";    break;
+            case PACER:     type = "Pacer";    break;
+            case WANDERER:  type = "Wanderer"; break;
+            case SENTRY:    type = "Sentry";   break;
+            case EXPLORERS: type = "Explorer"; break;
+            default:        type = "Unknown";  break;
         }
         char *status = entities[i]->isDefeated ? "Defeated" : "Active";
-        mvprintw(row++, win_x + 2, "%-10s x=%-3d y=%-3d %s",
-                 type, entities[i]->x, entities[i]->y, status);
+        mvwprintw(pad, i, 0, "%-10s x=%-3d y=%-3d %s",
+                  type, entities[i]->x, entities[i]->y, status);
     }
 
-    refresh();
-    *window_open = true;
+    int scroll = 0;
+    int max_scroll = num_of_npcs - list_h;
+    if(max_scroll < 0) max_scroll = 0;
+
+    char nav_key;
+    bool browsing = true;
+    while(browsing){
+        //Render the visible portion of the pad onto the screen
+        prefresh(pad, scroll, 0,
+                 win_y + 1, win_x + 1,
+                 win_y + win_h - 2, win_x + win_w - 2);
+
+        nav_key = getch(); //Similar to the one in my player
+        switch(nav_key){
+            case 'k':
+                if(scroll > 0) scroll--;
+                break;
+            case 'j':
+                if(scroll < max_scroll) scroll++;
+                break;
+            case 't':
+                browsing = false;
+                *window_open = false;
+                break;
+            default:
+                break;
+        }
+    }
+
+    delwin(pad);
+    delwin(npc_win);
 }
 
 int print_costs(int arr[80][21], entity *player){
