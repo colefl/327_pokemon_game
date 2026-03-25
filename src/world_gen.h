@@ -88,6 +88,8 @@ int handle_explorer_movement(entity *npc, Map *m);
 int print_board(Map *m);
 int print_costs(int arr[80][21], entity *player);
 void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open);
+int start_center_sequence();
+int start_center_state(Map *m);
 
 
 #endif /* WORLD_GEN_H_ */

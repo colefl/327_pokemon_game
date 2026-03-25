@@ -65,6 +65,8 @@ int print_board(struct Map *m);
 int print_costs(int arr[80][21], entity *player);
 int paint_board(struct Map *m);
 int run_battle_sequence();
+int start_center_sequence();
+int start_center_state(Map *m);
 entity* start_battle_state(Map *m, entity *npc);
 static entity* player_entity_collision(entity* entities[], int target_x, int target_y, int n);
 void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open);
@@ -282,6 +284,17 @@ void runGameLoop(heap_t *eq, entity* entities[], struct Map *m, int num_of_npcs)
                 	continue;
                     break;
 
+                case '>':
+                	if(player->prev_tile == 'C' || player->prev_tile == 'M'){
+                		//printf("Hello I'm in the center\n");
+                		start_center_sequence();
+                		start_center_state(m);
+                	} else {
+                		printf("Hello I'm in the break for center\n");
+                		printf("Player stuff: X: %d, Y: %d, at array: %c, prev_tile: %c\n", player->x, player->y, m->arr[player->x][player->y], player->prev_tile);
+                		break;
+                	}
+
                 default:
                     break;
             }
@@ -402,6 +415,35 @@ void runGameLoop(heap_t *eq, entity* entities[], struct Map *m, int num_of_npcs)
     endwin();
 }
 
+int start_center_state(Map *m){
+	int i,j;
+	for(i = 0; i < WORLDX; i++){
+		for(j = 0; j < WORLDY; j++){
+			mvaddch(j,i, ' ');
+			usleep(1000); //just a cool little thingy for now
+		}
+		refresh();
+	}
+	bool in_center = true;
+	char center_debug_screen[] = "Press < to exit center\mart";
+	int k;
+	for(k = 0; k < strlen(center_debug_screen); k++){
+		mvaddch(13, k + (WORLDX /2), center_debug_screen[k]);
+		usleep(1000);
+	}
+	while(in_center){
+		char key = 'h';
+		key = getch();
+		switch(key){
+		case '<':
+			in_center = false;
+			break;
+		}
+	}
+	paint_board(m);
+	return 0;
+}
+
 entity* start_battle_state(Map *m, entity *npc){ //Input the player and the npc in question. UPDATE ENTITY TO INCLUDE IS_DEFEATED
 	int i,j;
 		for(i = 0; i < WORLDX; i++){
@@ -419,19 +461,19 @@ entity* start_battle_state(Map *m, entity *npc){ //Input the player and the npc 
 		usleep(1000);
 	}
 	while(in_battle){
-	        char key = 'h';
-	        key = getch();
-	        switch(key){
-	        case 'q':
-	            npc->isDefeated = true;
-	            in_battle = false;
-	            // Recompute center_dist immediately using the NPC's current position
-	            entity* center_template = CreateEntity(HIKER, 0, 0);
-	            dijkstrasAlgo(m, centerX, centerY, center_template, center_dist);
-	            break;
-	        }
-	    }
-	    paint_board(m);
+		char key = 'h';
+		key = getch();
+		switch(key){
+		case 'q':
+			npc->isDefeated = true;
+			in_battle = false;
+			// Recompute center_dist immediately using the NPC's current position
+			entity* center_template = CreateEntity(HIKER, 0, 0);
+			dijkstrasAlgo(m, centerX, centerY, center_template, center_dist);
+			break;
+		}
+	}
+	paint_board(m);
 	return npc; // perhaps this works?
 }
 
@@ -1044,6 +1086,18 @@ int paint_board(struct Map *m){ //Add message char* parameter that displays on t
 	}
 	refresh();
 	return 0;
+}
+
+int start_center_sequence(){
+	int i,j;
+		for(i = 0; i < WORLDX; i++){
+			for(j = 0; j < WORLDY; j++){
+				mvaddch(j,i, '-');
+				usleep(1000); //just a cool little thingy for now
+			}
+			refresh();
+		}
+		return 0;
 }
 
 int run_battle_sequence(){
