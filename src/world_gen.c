@@ -172,6 +172,19 @@ void runGameLoop(heap_t *eq, entity* entities[], struct Map *m, int num_of_npcs)
     noecho();
     keypad(stdscr, TRUE);
 
+    start_color();
+	use_default_colors();
+	init_pair(1, COLOR_GREEN,   -1); // '.' short grass
+	init_pair(2, COLOR_CYAN,    -1); // ':' tall grass
+	init_pair(3, COLOR_BLUE,    -1); // '~' water
+	init_pair(4, COLOR_WHITE,   -1); // '#' path
+	init_pair(5, COLOR_RED,     -1); // '%' boulder
+	init_pair(6, COLOR_GREEN,   -1); // '^' tree (bold green)
+	init_pair(7, COLOR_YELLOW,  -1); // 'M' pokemart
+	init_pair(8, COLOR_YELLOW,  -1); // 'C' pokecenter
+	init_pair(9, COLOR_WHITE,   -1); // '@' player
+	init_pair(10, COLOR_RED,    -1); // NPC entities
+
 
 
     //printf("hello I make it inside the game loop\n");
@@ -267,6 +280,73 @@ void runGameLoop(heap_t *eq, entity* entities[], struct Map *m, int num_of_npcs)
                     m->arr[player->x][player->y] = player->marker;
                     break;
 
+                case 'y': // Moving upper-left
+					if(is_occupied(player->x - 1, player->y - 1, m, player)){
+						tmp = player_entity_collision(entities, player->x - 1, player->y - 1, num_of_npcs);
+						if(tmp != NULL && !(tmp->isDefeated)){
+							run_battle_sequence();
+							start_battle_state(m, tmp);
+						}
+						break;
+					}
+					if(is_border(player->x - 1, player->y - 1, m)) break;
+					m->arr[player->x][player->y] = player->prev_tile;
+					player->prev_tile = m->arr[player->x - 1][player->y - 1];
+					player->x = player->x - 1;
+					player->y = player->y - 1;
+					m->arr[player->x][player->y] = player->marker;
+					break;
+
+				case 'u': // Moving upper-right
+					if(is_occupied(player->x + 1, player->y - 1, m, player)){
+						tmp = player_entity_collision(entities, player->x + 1, player->y - 1, num_of_npcs);
+						if(tmp != NULL && !(tmp->isDefeated)){
+							run_battle_sequence();
+							start_battle_state(m, tmp);
+						}
+						break;
+					}
+					if(is_border(player->x + 1, player->y - 1, m)) break;
+					m->arr[player->x][player->y] = player->prev_tile;
+					player->prev_tile = m->arr[player->x + 1][player->y - 1];
+					player->x = player->x + 1;
+					player->y = player->y - 1;
+					m->arr[player->x][player->y] = player->marker;
+					break;
+
+				case 'n': // Moving lower-right
+					if(is_occupied(player->x + 1, player->y + 1, m, player)){
+						tmp = player_entity_collision(entities, player->x + 1, player->y + 1, num_of_npcs);
+						if(tmp != NULL && !(tmp->isDefeated)){
+							run_battle_sequence();
+							start_battle_state(m, tmp);
+						}
+						break;
+					}
+					if(is_border(player->x + 1, player->y + 1, m)) break;
+					m->arr[player->x][player->y] = player->prev_tile;
+					player->prev_tile = m->arr[player->x + 1][player->y + 1];
+					player->x = player->x + 1;
+					player->y = player->y + 1;
+					m->arr[player->x][player->y] = player->marker;
+					break;
+
+				case 'b': // Moving lower-left
+					if(is_occupied(player->x - 1, player->y + 1, m, player)){
+						tmp = player_entity_collision(entities, player->x - 1, player->y + 1, num_of_npcs);
+						if(tmp != NULL && !(tmp->isDefeated)){
+							run_battle_sequence();
+							start_battle_state(m, tmp);
+						}
+						break;
+					}
+					if(is_border(player->x - 1, player->y + 1, m)) break;
+					m->arr[player->x][player->y] = player->prev_tile;
+					player->prev_tile = m->arr[player->x - 1][player->y + 1];
+					player->x = player->x - 1;
+					player->y = player->y + 1;
+					m->arr[player->x][player->y] = player->marker;
+					break;
                 case 'q':
                     quit_game = true;
                     break;
@@ -1081,7 +1161,31 @@ int paint_board(struct Map *m){ //Add message char* parameter that displays on t
 	int i,j;
 	for(i = 0; i < WORLDX; i++){
 		for(j = 0; j < WORLDY; j++){
-			mvaddch(j, i, m->arr[i][j]);
+			char tile = m->arr[i][j];
+			int color_pair;
+			int attrs = 0;
+			switch(tile){
+				case '.': color_pair = 1; break; // short grass - green
+				case ':': color_pair = 2; break; // tall grass  - cyan
+				case '~': color_pair = 3; break;// water - blue
+				case '#': color_pair = 4; break;// path - white
+				case '%': color_pair = 5; break;// boulder - red
+				case '^': color_pair = 6; attrs = A_BOLD; break;  // tree - bold green
+				case 'M': color_pair = 7; attrs = A_BOLD; break;  // pokemart - bold yellow
+				case 'C': color_pair = 8; attrs = A_BOLD; break;  // pokecenter - bold yellow
+				case '@': color_pair = 9; attrs = A_BOLD; break;  // player - bold white
+				default:
+					if(tile != ' '){
+						color_pair = 10;   // NPC markers - bold red
+						attrs = A_BOLD;
+					} else {
+						color_pair = 0;
+					}
+					break;
+			}
+			attron(COLOR_PAIR(color_pair) | attrs);
+			mvaddch(j + 1, i, tile);
+			attroff(COLOR_PAIR(color_pair) | attrs);
 		}
 	}
 	refresh();
@@ -1092,7 +1196,7 @@ int start_center_sequence(){
 	int i,j;
 		for(i = 0; i < WORLDX; i++){
 			for(j = 0; j < WORLDY; j++){
-				mvaddch(j,i, '-');
+				mvaddch(j + 1 ,i, '-');
 				usleep(1000); //just a cool little thingy for now
 			}
 			refresh();
@@ -1104,7 +1208,7 @@ int run_battle_sequence(){
 	int i,j;
 	for(i = 0; i < WORLDX; i++){
 		for(j = 0; j < WORLDY; j++){
-			mvaddch(j,i, '/');
+			mvaddch(j + 1, i, '/');
 			usleep(1000); //just a cool little thingy for now
 		}
 		refresh();
@@ -1139,7 +1243,7 @@ void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open){
 
     char *title = "[ NPC LIST ]";
     mvwprintw(npc_win, 0, (win_w / 2) - (strlen(title) / 2), "%s", title);
-    mvwprintw(npc_win, win_h - 1, 2, "j/k to scroll, t to close");
+    mvwprintw(npc_win, win_h - 1, 2, "arrows to scroll, t to close");
 
     wrefresh(npc_win);
 
@@ -1191,7 +1295,7 @@ void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open){
     int max_scroll = num_of_npcs - list_h;
     if(max_scroll < 0) max_scroll = 0;
 
-    char nav_key;
+    int nav_key;
     bool browsing = true;
     while(browsing){
         //Render the visible portion of the pad onto the screen
@@ -1201,10 +1305,10 @@ void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open){
 
         nav_key = getch(); //Similar to the one in my player
         switch(nav_key){
-            case 'k':
+            case KEY_UP:
                 if(scroll > 0) scroll--;
                 break;
-            case 'j':
+            case KEY_DOWN:
                 if(scroll < max_scroll) scroll++;
                 break;
             case 't':
