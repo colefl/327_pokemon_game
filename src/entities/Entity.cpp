@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+//using namesapce st
 
 
 enum CharType{
@@ -37,12 +38,17 @@ typedef struct {
 	char marker;
 	int id;
 	char spawnsOn[4];
-	int weights[8];
+	int weights[NUM_OF_TILES];
 	bool isSpawned;
 	char prev_tile;
 	int direction;
 	bool isDefeated;
 } entity;
+
+/*
+ * Okay so
+ * todo: Change the entity to a class and include the methods inside of it. Maybe then things will work okay?
+ */
 
 
 int copyArrs(int arr1[NUM_OF_TILES], int arr2[NUM_OF_TILES]);
@@ -55,9 +61,9 @@ entity* CreateEntity(int id, int x, int y){
 	int hiker_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, 10, 50, 50, 15, 10, INT_MAX, INT_MAX, INT_MAX};
 	int rival_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, 10, 50, 50, 20, 10, INT_MAX, INT_MAX, INT_MAX};
 	int default_weights[NUM_OF_TILES] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX, INT_MAX, 10, 10, INT_MAX, INT_MAX, INT_MAX};
-	entity *tmp;
-	if(!(tmp = malloc(sizeof (*tmp)))){ //MAKE SURE WE FREE THIS DATA TYPE
-		return tmp;
+	entity *tmp = new entity;
+	if(!tmp){ //MAKE SURE WE FREE THIS DATA TYPE
+		return NULL;
 	}
 	switch (id){
 	case PLAYER:
