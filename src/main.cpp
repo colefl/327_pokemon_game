@@ -5,7 +5,7 @@
  *      Author: colef
  */
 
-#include "Maps.c"
+#include "Maps.h"
 #include <stdio.h>
 #include <stdbool.h>
 

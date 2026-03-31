@@ -32,8 +32,6 @@ int connect_northeast_corner(pathMaker *pm);
 bool checkForCenter(int wx, int wy, pathMaker *pm);
 bool checkForMart(int nx, int ny, pathMaker *pm);
 
-int rand_num;
-
 pathMaker makePaths(pathMaker *pm){
 	if(pm->map->entrances[North] == OutOfBounds && pm->map->entrances[West] == OutOfBounds){
 			connect_northwest_corner(pm);
@@ -194,6 +192,7 @@ int connectN_S(int nx, int ny, int sx, int sy, pathMaker *pm){
 }
 
 int connect_upwards(int sx, int sy, pathMaker *pm){
+    int rand_num;
 	rand_num = rand();
 	printf("starting y: %d | starting x: %d\n", sy, sx);
 
@@ -229,6 +228,7 @@ int connect_upwards(int sx, int sy, pathMaker *pm){
 }
 
 int connect_down(int nx, int ny, pathMaker *pm){
+    int rand_num;
 	rand_num = rand();
 	printf("starting y: %d | starting x: %d\n", ny, nx);
 
@@ -264,6 +264,7 @@ int connect_down(int nx, int ny, pathMaker *pm){
 }
 
 int connect_right(int wx, int wy, pathMaker *pm){
+    int rand_num;
 	rand_num = rand();
 	printf("starting y: %d | starting x: %d\n", wy, wx);
 
@@ -300,6 +301,7 @@ int connect_right(int wx, int wy, pathMaker *pm){
 }
 
 int connect_left(int ex, int ey, pathMaker *pm){
+    int rand_num;
 	rand_num = rand();
 	printf("starting y: %d | starting x: %d\n", ey, ex);
 
@@ -336,6 +338,7 @@ int connect_left(int ex, int ey, pathMaker *pm){
 
 //only North and West entrances
 int connect_southeast_corner(pathMaker *pm){
+    int rand_num;
 	if(pm->map->entrances[North] != OutOfBounds && pm->map->entrances[West] != OutOfBounds){
 		int nx = pm->map->entrances[North];
 		int ny = 0;
@@ -368,6 +371,7 @@ int connect_southeast_corner(pathMaker *pm){
 
 //only North and East entrances
 int connect_southwest_corner(pathMaker *pm){
+    int rand_num;
 	if(pm->map->entrances[North] != OutOfBounds && pm->map->entrances[East] != OutOfBounds){
 		int nx = pm->map->entrances[North];
 		int ny = 0;
@@ -400,6 +404,7 @@ int connect_southwest_corner(pathMaker *pm){
 
 //only South and West entrances
 int connect_northeast_corner(pathMaker *pm){
+    int rand_num;
 	if(pm->map->entrances[South] != OutOfBounds && pm->map->entrances[West] != OutOfBounds){
 		int sx = pm->map->entrances[South];
 		int sy = WORLDY - 1;
@@ -432,6 +437,7 @@ int connect_northeast_corner(pathMaker *pm){
 
 //only South and East entrances
 int connect_northwest_corner(pathMaker *pm){
+    int rand_num;
 	if(pm->map->entrances[South] != OutOfBounds && pm->map->entrances[East] != OutOfBounds){
 		int sx = pm->map->entrances[South];
 		int sy = WORLDY - 1;

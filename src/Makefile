@@ -1,5 +1,6 @@
-main: main.c
-	gcc main.c heap.c world_gen.c pathMaker.c entities/Entity.cpp entities/entity_move_q.c -o main -g -Wall -Werror -lncurses
+main: main.cpp heap.c world_gen.cpp pathMaker.cpp entities/Entity.cpp entities/entity_move_q.cpp Maps.cpp point_queue.cpp
+	gcc -c heap.c -o heap.o -g -Wall -Werror
+	g++ main.cpp heap.o world_gen.cpp pathMaker.cpp entities/Entity.cpp entities/entity_move_q.cpp Maps.cpp point_queue.cpp -o main -g -Wall -Werror -lncurses
 
 clean:
-	rm -rf main
+	rm -rf main heap.o

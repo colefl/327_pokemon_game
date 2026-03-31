@@ -7,28 +7,28 @@
  *      I found this resource to help: https://www.digitalocean.com/community/tutorials/queue-in-c
  */
 
+#include <new>
 #include <stdlib.h>
 #include <stdio.h>
 #include "point_queue.h"
 
 
-void initialize_pq(struct point_queue *pq){
+void initialize_pq(point_queue *pq){
 	pq->front = NULL;
 	pq->rear = NULL;
 	pq->size = 0;
 }
 
-int queue_size(struct point_queue *pq, int *size){
+int queue_size(point_queue *pq, int *size){
 	*size = pq->size;
 	return 0;
 }
 
-int enqueue(struct point_queue* q, int x, int y, char val) {
-	struct queue_item *tmp;
-	if(!(tmp = malloc(sizeof (*tmp)))){ //Even if we change the type of tmp or the data struct this would still work
-		//malloc failed
-		return -1;
-	}
+int enqueue(point_queue* q, int x, int y, char val) {
+	queue_item *tmp = new(std::nothrow) queue_item; //Double check
+    if(!tmp){
+        return -1;
+    }
     tmp->x = x;
     tmp->y = y;
     tmp->value=val;
@@ -44,12 +44,12 @@ int enqueue(struct point_queue* q, int x, int y, char val) {
     return 0;
 }
 
-int dequeue(struct point_queue* q, int *x, int *y, char *val) { //Need to change this to return a queue_item instead
+int dequeue(point_queue* q, int *x, int *y, char *val) { //Need to change this to return a queue_item instead
     if (q->front == NULL) {
         //printf("Queue is empty\n");
         return -1;
     }
-    struct queue_item* temp = q->front;
+    queue_item* temp = q->front;
     *x = temp->x;
     *y = temp-> y;
     *val = temp->value;

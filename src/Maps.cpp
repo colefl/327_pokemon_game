@@ -6,10 +6,12 @@
  */
 
 #include "world_gen.h"
+#include <new>
 
-typedef struct Maps{
-	struct Map* m[401][401];
-} Maps;
+class Maps{
+	public:
+	Map* m[401][401];
+};
 
 int checkEntrances(Maps *maps, int x, int y);
 
@@ -23,10 +25,14 @@ int initialize_all_maps(Maps *maps){
     return 0;
 }
 
-int initialize_maps(struct Maps *maps, int x, int y){
-	struct Map *tmp;
-	if(!(tmp = malloc(sizeof (*tmp)))){ //Even if we change the type of tmp or the data struct this would still work
-		//malloc failed
+int initialize_maps(Maps *maps, int x, int y){
+	// struct Map *tmp;
+	// if(!(tmp = malloc(sizeof (*tmp)))){ //Even if we change the type of tmp or the data struct this would still work
+	// 	//malloc failed
+	// 	return -1;
+	// }
+	Map *tmp = new(std::nothrow) Map; //Double check
+	if(!tmp){
 		return -1;
 	}
 
@@ -56,11 +62,16 @@ int initialize_maps(struct Maps *maps, int x, int y){
 
 int add_maps(Maps *maps, int x, int y){
 	if(maps->m[x][y] == NULL){ //Here I check to see if the map is a null pointer
-		struct Map *tmp;
-		if(!(tmp = malloc(sizeof (*tmp)))){ //Even if we change the type of tmp or the data struct this would still work
-			//malloc failed
+		// struct Map *tmp;
+		// if(!(tmp = malloc(sizeof (*tmp)))){ //Even if we change the type of tmp or the data struct this would still work
+		// 	//malloc failed
+		// 	return -1;
+		// }
+		Map *tmp = new(std::nothrow) Map; //Double check
+		if(!tmp){
 			return -1;
 		}
+
 
 		int i, j;
 

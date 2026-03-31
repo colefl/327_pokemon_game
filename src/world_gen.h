@@ -29,28 +29,49 @@ enum Entrances {
 };
 
 
-typedef struct Map{
+// typedef struct Map{
+// 	char arr[80][21];
+// 	bool visited[80][21];
+// 	int entrances[4];
+// 	bool omitDir[4];
+// } Map;
+
+class Map{
+	public:
 	char arr[80][21];
 	bool visited[80][21];
 	int entrances[4];
 	bool omitDir[4];
-} Map;
+};
 
 #include "pathMaker.h"
 
-struct point{
+// struct point{
+// 	int x;
+// 	int y;
+// 	//bool hasGone;
+// 	//bool growing;
+// 	//struct point *next;
+// }; //Got from Brian W Kernighan and Dennis M. Ritchie's book
+
+class point{
+	public:
 	int x;
 	int y;
-	//bool hasGone;
-	//bool growing;
-	//struct point *next;
-}; //Got from Brian W Kernighan and Dennis M. Ritchie's book
+};
 
-typedef struct {
-    int x;
-    int y;
-    int cost;
-} map_cell_t;
+// typedef struct {
+//     int x;
+//     int y;
+//     int cost;
+// } map_cell_t;
+
+class map_cell_t{
+	public:
+	int x;
+	int y;
+	int cost;
+};
 
 //Variables
 #define WORLDX 80
@@ -58,28 +79,28 @@ typedef struct {
 
 //Methods
 
-int init_map(struct Map *m);
+int init_map(Map *m);
 
 //WORLD EDGE
 int init_world_edge(Map *current_map);
 
 //WORLD SPREAD
 int get_num(int count, Map *m);
-void DFS(struct point_queue *pq, Map *m);
-bool canGrow(struct queue_item p, Map *m);
+void DFS(point_queue *pq, Map *m);
+bool canGrow(queue_item p, Map *m);
 int pepperInTrees(Map *m);
 
 //SPAWNING ENTITIES
-int spawnEntities(heap_t *eq, entity* entities[], int rand_num, struct Map *m);
+int spawnEntities(heap_t *eq, entity* entities[], int rand_num, Map *m);
 int spawnEntity(entity *npc, int id, Map *m);
 int32_t cell_compare(const void *key, const void *with);
-int dijkstrasAlgo(struct Map *m, int x, int y, entity *npc, int dist[80][21]);
+int dijkstrasAlgo(Map *m, int x, int y, entity *npc, int dist[80][21]);
 int check_if_spawns_on(char tile, char spawnables[4]);
 
 //GAMELOOP
-void runGameLoop(heap_t *eq, entity* entities[], struct Map *m, int num_of_npcs);
+void runGameLoop(heap_t *eq, entity* entities[], Map *m, int num_of_npcs);
 entity* start_battle_state(Map *m, entity *npc);
-int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m, entity* entities[]);
+int handle_npc_movement(entity *npc, int dist[80][21], Map *m, entity* entities[]);
 int handle_wanderer_movement(entity *npc, Map *m);
 int handle_pacer_movement(entity *npc, Map *m);
 int handle_explorer_movement(entity *npc, Map *m);

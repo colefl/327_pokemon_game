@@ -11,13 +11,21 @@
 
 #include "world_gen.h"
 
-typedef struct {
+// typedef struct {
+//     Map *map;
+//     entity* player;
+//     //Possibly will add the squares for the center into this;
+//     int centerLocationX;
+//     int centerLocationY;
+// } pathMaker;
+
+class pathMaker {
+    public:
     Map *map;
     entity* player;
-    //Possibly will add the squares for the center into this;
     int centerLocationX;
     int centerLocationY;
-} pathMaker;
+};
 
 
 pathMaker makePaths(pathMaker *pm);

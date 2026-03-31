@@ -20,10 +20,16 @@
 #include "Entity.h"
 
 
-typedef struct entity_move {
+// typedef struct entity_move {
+// 	entity *npc;
+// 	int next_move;
+// } entity_move;
+
+class entity_move {
+	public:
 	entity *npc;
 	int next_move;
-} entity_move;
+};
 
 void init_game_queue(heap_t *pq);
 void enqueue_entity(heap_t *pq, entity *ent, int time);

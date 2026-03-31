@@ -13,8 +13,11 @@
 #include <string.h>
 #include "heap.h"
 //#include "stack.c"
-#include "point_queue.c"
+#include "point_queue.h"
 #include "pathMaker.h"
+
+#include <string>
+#include <new>
 //#include "entities/Entity.c"
 //#include "entities/entity_d_array.c"
 //#include "Maps.c"
@@ -35,35 +38,35 @@
 //Methods
 
 //WORLD EDGE
-int init_world_edge(struct Map *current_map);
+int init_world_edge(Map *current_map);
 
 //WORLD SPREAD
-int get_num(int count, struct Map *m);
-void DFS(struct point_queue *pq, struct Map *m);
-bool canGrow(struct queue_item p, struct Map *m);
-int pepperInTrees(struct Map *m);
+int get_num(int count, Map *m);
+void DFS(point_queue *pq, Map *m);
+bool canGrow(queue_item p, Map *m);
+int pepperInTrees(Map *m);
 
 //SPAWNING ENTITIES
-int spawnEntities(heap_t *eq, entity* entities[], int rand_num, struct Map *m);
-int spawnEntity(entity *npc, int id, struct Map *m);
+int spawnEntities(heap_t *eq, entity* entities[], int rand_num, Map *m);
+int spawnEntity(entity *npc, int id, Map *m);
 int32_t cell_compare(const void *key, const void *with);
-int dijkstrasAlgo(struct Map *m, int x, int y, entity *npc, int dist[80][21]);
+int dijkstrasAlgo(Map *m, int x, int y, entity *npc, int dist[80][21]);
 static int getTerrainCost(char tile, entity *npc);
 int check_if_spawns_on(char tile, char spawnables[4]);
 
 //GAMELOOP
-void runGameLoop(heap_t *eq, entity* entities[], struct Map *m, int num_of_npcs);
-int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m, entity* entities[]);
-int handle_wanderer_movement(entity *npc, struct Map *m);
-int handle_pacer_movement(entity *npc, struct Map *m);
-int handle_explorer_movement(entity *npc, struct Map *m);
-static int is_border(int x, int y, struct Map *m);
-static int is_occupied(int x, int y, struct Map *m, entity *self);
+void runGameLoop(heap_t *eq, entity* entities[], Map *m, int num_of_npcs);
+int handle_npc_movement(entity *npc, int dist[80][21], Map *m, entity* entities[]);
+int handle_wanderer_movement(entity *npc, Map *m);
+int handle_pacer_movement(entity *npc, Map *m);
+int handle_explorer_movement(entity *npc, Map *m);
+static int is_border(int x, int y, Map *m);
+static int is_occupied(int x, int y, Map *m, entity *self);
 
 //Helper
-int print_board(struct Map *m);
+int print_board(Map *m);
 int print_costs(int arr[80][21], entity *player);
-int paint_board(struct Map *m);
+int paint_board(Map *m);
 int run_battle_sequence();
 int start_center_sequence();
 int start_center_state(Map *m);
@@ -90,7 +93,7 @@ int centerY;
 struct point g1, g2, tg1, tg2, w;
 
 
-int init_map(struct Map *m){
+int init_map(Map *m){
 	int i, j;
     for(i = 0; i < WORLDX; i++){
         for(j = 0; j < WORLDY; j++){
@@ -124,7 +127,10 @@ int init_map(struct Map *m){
 
 	init_world_edge(m);
 
-	player = malloc(sizeof (entity)); //Need to free
+	entity *player = new(std::nothrow) entity; //Double check
+    if(!player){
+        return -1;
+    }
 
 	//printf("I make it past init_world_edge\n");
 	pathMaker pm = makePathMaker(m, player);
@@ -160,7 +166,7 @@ int init_map(struct Map *m){
 	return 0;
 }
 
-void runGameLoop(heap_t *eq, entity* entities[], struct Map *m, int num_of_npcs) {
+void runGameLoop(heap_t *eq, entity* entities[], Map *m, int num_of_npcs) {
 
     int current_time = 0;
     entity_move *event;
@@ -192,6 +198,8 @@ void runGameLoop(heap_t *eq, entity* entities[], struct Map *m, int num_of_npcs)
     //Idea for tomorrow: have a battle sequence boolean or int or something and that way if there's a battle sequence going on we can switch from the game state
     //ADD A GAME STATE INTEGER AND A THINGY UP TOP AN ENUM OH YEA
     //ALSO add a boolean for defeated into the entity class
+
+    paint_board(m);
 
     while (!quit_game) {
         event = dequeue_next(eq);
@@ -506,7 +514,7 @@ int start_center_state(Map *m){
 	}
 	bool in_center = true;
 	char center_debug_screen[] = "Press < to exit center'\'mart";
-	int k;
+	size_t k;
 	for(k = 0; k < strlen(center_debug_screen); k++){
 		mvaddch(13, k + (WORLDX /2), center_debug_screen[k]);
 		usleep(1000);
@@ -535,7 +543,7 @@ entity* start_battle_state(Map *m, entity *npc){ //Input the player and the npc 
 		}
 	bool in_battle = true;
 	char battle_debug_screen[] = "Press q to exit battle";
-	int k;
+	size_t k;
 	for(k = 0; k < strlen(battle_debug_screen); k++){
 		mvaddch(13, k + (WORLDX /2), battle_debug_screen[k]);
 		usleep(1000);
@@ -557,7 +565,7 @@ entity* start_battle_state(Map *m, entity *npc){ //Input the player and the npc 
 	return npc; // perhaps this works?
 }
 
-static int is_border(int x, int y, struct Map *m)
+static int is_border(int x, int y, Map *m)
 {
     /* Map edges are always border */
     if (x <= 0 || x >= 79 || y <= 0 || y >= 20) return 1;
@@ -578,9 +586,7 @@ static entity* player_entity_collision(entity* entities[], int target_x, int tar
     return NULL;
 }
 
-static int is_occupied(int x, int y, struct Map *m, entity *self) //This is okay to just return an int since it's only being used for the npcs.
-//Maybe in a further refactor, I could put the logic for the check inside of here but also that might bog the game down sinces thats an
-//O(n) running everytime anything whatsoever runs into something
+static int is_occupied(int x, int y, Map *m, entity *self)
 {
     char tile = m->arr[x][y];
     /* Player and NPC markers count as occupied */
@@ -598,7 +604,7 @@ static int is_occupied(int x, int y, struct Map *m, entity *self) //This is okay
 //
 //}
 
-int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m, entity* entities[]) {
+int handle_npc_movement(entity *npc, int dist[80][21], Map *m, entity* entities[]) {
     int dx[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
     int dy[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
 
@@ -662,7 +668,7 @@ int handle_npc_movement(entity *npc, int dist[80][21], struct Map *m, entity* en
     return getTerrainCost(npc->prev_tile, npc);
 }
 
-int handle_wanderer_movement(entity *npc, struct Map *m) {
+int handle_wanderer_movement(entity *npc, Map *m) {
     int dx[8] = { 0,  0,  1, -1,  1, -1,  1, -1};
     int dy[8] = {-1,  1,  0,  0, -1,  1,  1, -1};
 
@@ -708,7 +714,7 @@ int handle_wanderer_movement(entity *npc, struct Map *m) {
     return getTerrainCost(m->arr[npc->x][npc->y], npc);
 }
 
-int handle_pacer_movement(entity *npc, struct Map *m)
+int handle_pacer_movement(entity *npc, Map *m)
 {
 
 	int dx[8] = { 0,  0,  1, -1,  1, -1,  1, -1};
@@ -749,7 +755,7 @@ int handle_pacer_movement(entity *npc, struct Map *m)
     return getTerrainCost(m->arr[npc->x][npc->y], npc);
 }
 
-int handle_explorer_movement(entity *npc, struct Map *m) {
+int handle_explorer_movement(entity *npc, Map *m) {
     int dx[8] = { 0,  0,  1, -1,  1, -1,  1, -1};
     int dy[8] = {-1,  1,  0,  0, -1,  1,  1, -1};
 
@@ -794,7 +800,7 @@ int handle_explorer_movement(entity *npc, struct Map *m) {
     return getTerrainCost(m->arr[npc->x][npc->y], npc);
 }
 
-int init_world_edge(struct Map *current_map){
+int init_world_edge(Map *current_map){
 	int i,j;
 	if(current_map->entrances[North] == OutOfBounds){
 		current_map->omitDir[North] = true;
@@ -856,7 +862,7 @@ int init_world_edge(struct Map *current_map){
 	return 0;
 }
 
-bool canGrow(struct queue_item p, struct Map *m){
+bool canGrow(queue_item p, Map *m){
 
 	if(m->arr[p.x][p.y] == '#' || m->arr[p.x][p.y] == '%' || m->visited[p.x][p.y] || p.x >= WORLDX - 1 || p.y >= WORLDY - 1 || p.x <= 0 || p.y <= 0){
 		return false;
@@ -865,7 +871,7 @@ bool canGrow(struct queue_item p, struct Map *m){
 	return true;
 }
 
-void DFS(struct point_queue *pq, struct Map *m){
+void DFS(point_queue *pq, Map *m){
 	//queue_size(pq, &size); //Need to figure out where this comes from
 	//initialize_pq(*pq);
 	 //I think I need to update this to take on points, then I can have it push on the four points. But I would need it to get pushed to the back instead of the front
@@ -890,7 +896,7 @@ void DFS(struct point_queue *pq, struct Map *m){
 	}
 }
 
-int pepperInTrees(struct Map *m){
+int pepperInTrees(Map *m){
 	int count = 0;
 	int rand_x, rand_y;
 	while(count < 30){
@@ -904,7 +910,7 @@ int pepperInTrees(struct Map *m){
 	return 0;
 }
 
-int get_num(int count, struct Map *m){
+int get_num(int count, Map *m){
 
 	g1.x = (rand_num % 78) + 1;
 	g1.y = (rand_num % 19) + 1;
@@ -962,20 +968,22 @@ int check_if_spawns_on(char tile, char spawnables[4]){
 	return 0;
 }
 
-int spawnEntities(heap_t *eq, entity* entities[], int rand_num, struct Map *m){
+int spawnEntities(heap_t *eq, entity* entities[], int rand_num, Map *m){
 	int i;
-	printf("Hello I make it inside spawnEntities\n");
+	//printf("Hello I make it inside spawnEntities\n");
 //	entity *explorer = malloc(sizeof(entity)); //For testing purposes
 //	explorer = CreateEntity(EXPLORERS, 0, 0);
 //	spawnEntity(explorer, EXPLORERS, m);
 //	enqueue_entity(eq, explorer, 0);
 	    for (i = 0; i < rand_num; i++) {
 	    	//printf("I make it inside of here\n");
-	    	entity *npc;
-	        npc  = malloc(sizeof(entity));
+	    	entity *npc = new(std::nothrow) entity; //Double check
+			if(!npc){
+				return -1;
+			}
 	        int rand_entity = rand() % 6 + 1;
 	        npc = CreateEntity(rand_entity, 0, 0);
-	        printf("npc isSpawned = %b\n", npc->isSpawned);
+	        printf("npc isSpawned = %d\n", npc->isSpawned);
 	        //printf("Entity is created\n");
 	        spawnEntity(npc, rand_entity, m); //NEED TO FIX
 	        printf("Entity is initialized\n");
@@ -993,7 +1001,7 @@ int spawnEntities(heap_t *eq, entity* entities[], int rand_num, struct Map *m){
  * I think I could improve this algorithm by making it pass in a queue of entities/d_array
  * Currently, it requires for there to be a special magical awesome number of 5 entities for it to work.
  */
-int spawnEntity(entity *npc, int id, struct Map *m){
+int spawnEntity(entity *npc, int id, Map *m){
 	//Spawn stuff and things
 	int rand_x;
 	int rand_y;
@@ -1023,7 +1031,7 @@ int32_t cell_compare(const void *key, const void *with) {
     return ((map_cell_t *)key)->cost - ((map_cell_t *)with)->cost;
 }
 
-int dijkstrasAlgo(struct Map *m, int x, int y, entity *npc, int dist[80][21]){
+int dijkstrasAlgo(Map *m, int x, int y, entity *npc, int dist[80][21]){
     heap_t h;
     heap_node_t *nodes[80][21];
     map_cell_t  *cells[80][21];
@@ -1039,7 +1047,10 @@ int dijkstrasAlgo(struct Map *m, int x, int y, entity *npc, int dist[80][21]){
 
     heap_init(&h, cell_compare, free);
 
-    map_cell_t *start = malloc(sizeof(map_cell_t)); //Evil segmentation arror...
+    map_cell_t *start = new(std::nothrow) map_cell_t; //Evil segmentation error
+    if(!start){
+        return -1;
+    }
     start->x = x;
     start->y = y;
     start->cost = 0;
@@ -1052,7 +1063,8 @@ int dijkstrasAlgo(struct Map *m, int x, int y, entity *npc, int dist[80][21]){
     int dy[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
 
     while (h.size > 0) {
-        map_cell_t *cur = heap_remove_min(&h);
+        map_cell_t *cur;
+		cur = (map_cell_t *) heap_remove_min(&h); //Simply needed to cast
         int cx = cur->x, cy = cur->y;
 
         //Getting all of the surrounding nodes inside
@@ -1092,7 +1104,10 @@ int dijkstrasAlgo(struct Map *m, int x, int y, entity *npc, int dist[80][21]){
                 dist[nx][ny] = new_cost;
 
                 if (nodes[nx][ny] == NULL) {
-                    map_cell_t *cell = malloc(sizeof(map_cell_t)); //Evil segmentation error part 2 except I got it this time
+                    map_cell_t *cell = new(std::nothrow) map_cell_t; //Double check
+					if(!cell){
+						return -1;
+					}
                     cell->x = nx;
                     cell->y = ny;
                     cell->cost = new_cost;
@@ -1145,7 +1160,7 @@ static int getTerrainCost(char tile, entity *npc){
 	return INT_MAX;
 }
 
-int print_board(struct Map *m){
+int print_board(Map *m){
 	int i,j;
 	//j is x and i is y in this case
 	for(i = 0; i < WORLDY; i++){
@@ -1157,7 +1172,7 @@ int print_board(struct Map *m){
 	return 0;
 }
 
-int paint_board(struct Map *m){ //Add message char* parameter that displays on the first line
+int paint_board(Map *m){ //Add message char* parameter that displays on the first line
 	int i,j;
 	for(i = 0; i < WORLDX; i++){
 		for(j = 0; j < WORLDY; j++){
@@ -1241,7 +1256,7 @@ void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open){
         mvwaddch(npc_win, i, win_w - 1, '|');
     }
 
-    char *title = "[ NPC LIST ]";
+    const char *title = "[ NPC LIST ]";
     mvwprintw(npc_win, 0, (win_w / 2) - (strlen(title) / 2), "%s", title);
     mvwprintw(npc_win, win_h - 1, 2, "arrows to scroll, t to close");
 
@@ -1252,15 +1267,29 @@ void toggle_npc_window(entity* entities[], int num_of_npcs, bool *window_open){
 
     //int i;
     for(i = 0; i < num_of_npcs; i++){
-        char *type;
+        const char *type;
         switch(entities[i]->id){
-            case HIKER:     type = "Hiker";    break;
-            case RIVAL:     type = "Rival";    break;
-            case PACER:     type = "Pacer";    break;
-            case WANDERER:  type = "Wanderer"; break;
-            case SENTRY:    type = "Sentry";   break;
-            case EXPLORERS: type = "Explorer"; break;
-            default:        type = "Unknown";  break;
+            case HIKER:
+				type = "Hiker";
+				break;
+            case RIVAL:
+				type = "Rival";
+				break;
+            case PACER:
+				type = "Pacer";
+				break;
+            case WANDERER:
+				type = "Wanderer";
+				break;
+            case SENTRY:
+				type = "Sentry";
+				break;
+            case EXPLORERS:
+				type = "Explorer";
+				break;
+            default:
+				type = "Unknown";
+				break;
         }
         //char *status = entities[i]->isDefeated ? "Defeated" : "Active";
         int entityDistX = entities[i]->x - player->x;

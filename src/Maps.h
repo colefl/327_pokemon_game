@@ -9,9 +9,13 @@
 #define MAPS_H_
 #include "world_gen.h"
 
-typedef struct Maps {
-    struct Map* m[401][401];
-} Maps;
+// typedef struct Maps {
+//     struct Map* m[401][401];
+// } Maps;
+
+class Maps {
+    Map* m[401][401];
+};
 
 int initialize_all_maps(Maps *maps);
 int initialize_maps(Maps *maps, int x, int y);

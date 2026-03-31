@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <new>
 
 #include "../heap.h"
 
@@ -33,10 +34,9 @@ void init_game_queue(heap_t *pq)
 
 void enqueue_entity(heap_t *pq, entity *ent, int time)
 {
-    entity_move *ev = malloc(sizeof(entity_move));
-    if (!ev) {
-    	printf("This isn't working in the enqueue\n");
-    	return;
+    entity_move *ev = new(std::nothrow) entity_move; //Double check
+    if(!ev){
+        return;
     }
 
     ev->npc = ent;

@@ -27,7 +27,8 @@ enum entity_readbility{
 	NUM_OF_TILES = 10
 };
 
-typedef struct {
+class entity{
+	public:
 	int x;
 	int y;
 	char marker;
@@ -38,7 +39,19 @@ typedef struct {
 	char prev_tile;
 	int direction;
 	bool isDefeated;
-} entity;
+};
+// typedef struct {
+// 	int x;
+// 	int y;
+// 	char marker;
+// 	int id;
+// 	char spawnsOn[4];
+// 	int weights[8];
+// 	bool isSpawned;
+// 	char prev_tile;
+// 	int direction;
+// 	bool isDefeated;
+// } entity;
 
 int copyArrs(int arr1[NUM_OF_TILES], int arr2[NUM_OF_TILES]);
 int printArr(int arr[NUM_OF_TILES]);
